@@ -12,10 +12,12 @@
         "datapack",
         "worldgen",
         "modpack",
-        "plugin",
-        "server",
         "npc",
-        "mcp"
+        "minecraft server",
+        "paper plugin",
+        "fabric mod",
+        "neoforge mod",
+        "minecraft plugin"
       ],
       "default": [
         "minecraft-architecture"
@@ -69,7 +71,8 @@
         "desktop",
         "deploy",
         "react",
-        "supabase"
+        "supabase",
+        "server deployment"
       ],
       "default": [
         "backend-api"
@@ -92,7 +95,9 @@
         "seo",
         "responsive",
         "cms",
-        "webpage"
+        "webpage",
+        "web builder",
+        "web site"
       ],
       "default": [
         "webbuilder-orchestrator"
@@ -111,6 +116,25 @@
         "webbuilder-cms",
         "webbuilder-integration"
       ]
+    },
+    "appbuilder": {
+      "root": "AppBuilder/skills",
+      "keywords": [
+        "appbuilder",
+        "app builder",
+        "build an app",
+        "build an application",
+        "create an app",
+        "generate an app"
+      ],
+      "default": [
+        "appbuilder-orchestrator"
+      ],
+      "skills": [
+        "appbuilder-orchestrator",
+        "appbuilder-design",
+        "appbuilder-quality"
+      ]
     }
   },
   "shared_skills": [
@@ -124,5 +148,73 @@
     "Never combine incompatible Minecraft loader APIs as one implementation",
     "All execution requires explicit tooling and permission",
     "Record tests as verified only after running them"
-  ]
+  ],
+  "shared_skill_keywords": {
+    "change-reviewer": [
+      "review",
+      "code review",
+      "change review",
+      "pull request",
+      "pr review"
+    ],
+    "bug-investigator": [
+      "bug",
+      "debug",
+      "investigate bug",
+      "regression",
+      "crash"
+    ],
+    "documentation-auditor": [
+      "documentation",
+      "docs",
+      "readme",
+      "documentation audit"
+    ],
+    "workflow-orchestrator": [
+      "workflow",
+      "orchestrate",
+      "coordination"
+    ]
+  },
+  "skill_keywords": {
+    "webbuilder-content-seo": [
+      "seo",
+      "search engine optimization",
+      "metadata"
+    ],
+    "webbuilder-design-system": [
+      "design system",
+      "design tokens"
+    ],
+    "webbuilder-visual-qa": [
+      "visual qa",
+      "visual regression",
+      "screenshot"
+    ],
+    "minecraft-server-ops": [
+      "minecraft server",
+      "server ops",
+      "server operations"
+    ],
+    "appbuilder-design": [
+      "app design",
+      "ui design"
+    ],
+    "appbuilder-quality": [
+      "app quality",
+      "quality assurance"
+    ],
+    "applications/deployment-engineer": [
+      "deploy",
+      "deployment",
+      "release server"
+    ],
+    "webbuilder-layout": [
+      "responsive",
+      "layout"
+    ],
+    "webbuilder-cms": [
+      "cms"
+    ]
+  }
 }
