@@ -31,6 +31,7 @@ jobs:
         if: always()
         with:
           name: original-blender-asset
+          include-hidden-files: true
           path: .artifacts/assets/*
           if-no-files-found: error
   browser:
@@ -59,6 +60,7 @@ jobs:
         if: always()
         with:
           name: browser-evidence
+          include-hidden-files: true
           path: |
             .artifacts/browser/*.png
             .artifacts/browser/*.json
@@ -82,6 +84,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: standalone-builders
+          include-hidden-files: true
           path: .artifacts/packages/*
           if-no-files-found: error
   lifecycle-and-references:
@@ -127,6 +130,7 @@ jobs:
         if: always()
         with:
           name: minecraft-${{ matrix.kind }}
+          include-hidden-files: true
           path: |
             .artifacts/minecraft-${{ matrix.kind }}/result.json
             .artifacts/minecraft-${{ matrix.kind }}/*.log
@@ -159,6 +163,7 @@ jobs:
         if: always()
         with:
           name: fabric-live-server
+          include-hidden-files: true
           path: |
             .artifacts/fabric-server/result.json
             .artifacts/fabric-server/*.log

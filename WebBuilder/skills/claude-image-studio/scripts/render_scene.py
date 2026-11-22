@@ -58,7 +58,10 @@ def main():
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
-    scene.cycles.samples = 24
+    scene.cycles.samples = 32
+    scene.cycles.seed = 42
+    # Distribution builds may omit OpenImageDenoise. CPU rendering must still work.
+    scene.cycles.use_denoising = False
     scene.render.threads_mode, scene.render.threads = "FIXED", 2
     scene.render.resolution_x, scene.render.resolution_y = args.width, args.height
     scene.render.resolution_percentage = 100
