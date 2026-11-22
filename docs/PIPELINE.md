@@ -15,7 +15,7 @@ The default is a dry run. With `--execute`, the pipeline invokes an installed, a
 | --- | --- | --- |
 | web | `npm run build` | `package.json` |
 | app | `python -m pytest` | `pyproject.toml` or `pytest.ini` |
-| minecraft | `./gradlew build` | `gradlew` |
+| minecraft | `./gradlew build` | `gradlew` or Gradle on PATH |
 
 Optional `--repairs 2` allows up to two additional agent invocations after failed checks. It does not retry missing toolchains or failed agent invocations.
 
