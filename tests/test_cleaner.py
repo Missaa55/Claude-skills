@@ -47,7 +47,12 @@ class CleanerTests(unittest.TestCase):
     def test_ignores_symlinks(self):
         target = self.root / "actual.txt"
         target.write_text("data")
-        (self.root / "temp.bak").symlink_to(target)
+        try:
+            (self.root / "temp.bak").symlink_to(target)
+        except OSError as exc:
+            if getattr(exc, "winerror", None) == 1314:
+                self.skipTest("Windows account cannot create symlinks; junctions tested separately")
+            raise
         self.assertEqual(scan(self.root, "web")["findings"], [])
 
     def test_unknown_builder(self):

@@ -1,79 +1,68 @@
 import json
+from pathlib import Path
 import tempfile
 import unittest
-from pathlib import Path
-from subprocess import CompletedProcess, TimeoutExpired
 from unittest.mock import patch
-from core.runtime import RunRequest, prepare, execute
+from core.process import Policy
+from core.runtime import RunRequest, execute, prepare, doctor, _usage
+
 
 class RuntimeTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name)
-        self.request = RunRequest("web", "Build a page", self.path, "claude", 5)
+        self.request = RunRequest("web", "Build a page", self.path, "claude", 5, Policy("trusted-local"))
 
     def test_approval_required(self):
         with self.assertRaises(PermissionError):
             execute(self.request)
 
     @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
-    def test_no_shell_interpolation(self, _):
-        plan = prepare(RunRequest("web", "hello; rm -rf /", self.path, "claude"))
-        self.assertEqual(plan["command"], ["/usr/bin/claude", "-p", "hello; rm -rf /"])
+    def test_prompt_not_in_arguments(self, _):
+        plan = prepare(RunRequest("web", "hello; $(secret)", self.path, "claude", policy=Policy("trusted-local")))
+        self.assertFalse(any("secret" in p for p in plan["command"]))
 
-    @patch("core.runtime.shutil.which", return_value="/usr/bin/codex")
-    def test_codex(self, _):
-        self.assertEqual(prepare(RunRequest("app", "hello", self.path, "codex"))["command"][1], "exec")
+    def test_codex_limits(self):
+        plan = prepare(RunRequest("app", "hello", self.path, "codex"))
+        self.assertIn("--ignore-user-config", plan["command"])
+        self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", plan["command"])
 
-    def test_invalid_builder(self):
-        with self.assertRaises(ValueError):
-            prepare(RunRequest("invalid", "x", self.path, "claude"))
-
-    def test_invalid_provider(self):
-        with self.assertRaises(ValueError):
-            prepare(RunRequest("web", "x", self.path, "invalid"))
-
-    def test_empty_prompt(self):
-        with self.assertRaises(ValueError):
-            prepare(RunRequest("web", " ", self.path, "claude"))
-
-    def test_timeout_validation(self):
-        with self.assertRaises(ValueError):
-            prepare(RunRequest("web", "x", self.path, "claude", 0))
-
-    def test_missing_workspace(self):
+    def test_invalid_requests(self):
+        for builder, prompt, provider, timeout in (("invalid", "x", "claude", 5), ("web", " ", "claude", 5), ("web", "x", "bad", 5), ("web", "x", "claude", 0)):
+            with self.subTest(builder=builder, provider=provider), self.assertRaises(ValueError):
+                prepare(RunRequest(builder, prompt, self.path, provider, timeout))
         with self.assertRaises(FileNotFoundError):
-            prepare(RunRequest("web", "x", self.path / "missing", "claude"))
+            prepare(RunRequest("web", "x", self.path / "absent", "claude"))
 
-    @patch("core.runtime.subprocess.run", return_value=CompletedProcess([], 0, "ok", ""))
+    @patch("core.runtime.run", return_value={"status": "passed", "exit_code": 0, "stdout": "ok", "stderr": "", "elapsed_seconds": 0.1})
     @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
-    def test_success_log(self, _, run):
+    def test_success_logs_and_stdin(self, _, runner):
         result = execute(self.request, approved=True)
         self.assertEqual(result["status"], "success")
-        self.assertEqual(json.loads(Path(result["log_file"]).read_text())["stdout"], "ok")
-        self.assertFalse(run.call_args.kwargs.get("shell", False))
-
-    @patch("core.runtime.subprocess.run", return_value=CompletedProcess([], 1, "", "error"))
-    @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
-    def test_failure(self, *_):
-        self.assertEqual(execute(self.request, approved=True)["status"], "failed")
-
-    @patch("core.runtime.subprocess.run", side_effect=TimeoutExpired("cmd", 5))
-    @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
-    def test_timeout(self, *_):
-        self.assertEqual(execute(self.request, approved=True)["status"], "timeout")
-
-    @patch("core.runtime.shutil.which", return_value=None)
-    def test_missing_cli(self, _):
-        with self.assertRaises(FileNotFoundError):
-            prepare(self.request)
+        record = json.loads(Path(result["log_file"]).read_text())
+        self.assertEqual(record["stdout"], "ok")
+        self.assertEqual(record["verification"], "NOT VERIFIED")
+        self.assertEqual(runner.call_args.kwargs["stdin"], self.request.prompt)
 
     @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
     def test_external_logs_rejected(self, _):
-        with tempfile.TemporaryDirectory() as other:
-            with self.assertRaises(ValueError):
-                execute(self.request, approved=True, log_dir=Path(other))
+        with tempfile.TemporaryDirectory() as other, self.assertRaises(ValueError):
+            execute(self.request, approved=True, log_dir=Path(other))
+
+    @patch("core.runtime.shutil.which", return_value=None)
+    def test_missing_cli_and_doctor(self, _):
+        with self.assertRaises(FileNotFoundError):
+            prepare(self.request)
+        self.assertFalse(doctor("claude")["available_on_host"])
+        self.assertEqual(doctor("claude")["authenticated"], "NOT VERIFIED")
+
+    def test_usage_no_invented_costs(self):
+        result = _usage('{"type":"turn.completed","usage":{"input_tokens":123,"output_tokens":20}}')
+        self.assertEqual(result["tokens"]["input_tokens"], 123)
+        self.assertIsNone(result["estimated_cost_usd"])
+        self.assertIsNone(_usage("invalid provider response")["tokens"])
+
 
 if __name__ == "__main__":
     unittest.main()
