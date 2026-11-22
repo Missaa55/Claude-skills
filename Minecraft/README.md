@@ -23,7 +23,7 @@ python3 scripts/validate_skills.py
 python3 -m unittest discover -s tests -v
 ```
 
-The validator checks all current skill directories: `skills/`, `Minecraft/skills/`, `Universal/skills/`, and `Applications/skills/`.
+The validator checks all current skill directories: `skills/`, `Minecraft/skills/`, `Universal/skills/`, `Applications/skills/`, `AppBuilder/skills/`, and `WebBuilder/skills/`.
 
 ## Design
 
