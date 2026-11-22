@@ -1,0 +1,1 @@
+"""Conservative, offline quality diagnostics."""
