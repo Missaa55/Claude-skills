@@ -17,5 +17,7 @@ jobs:
           python-version: "3.11"
       - name: Validate skill metadata
         run: python3 scripts/validate_skills.py
-      - name: Run unit tests
+      - name: Validate routing registry and contracts
+        run: python3 scripts/validate_registry.py
+      - name: Run unit and integration tests
         run: python3 -m unittest discover -s tests -v
