@@ -32,7 +32,8 @@ class PipelineTests(unittest.TestCase):
     def test_no_app_tests_without_config(self):
         self.assertEqual(verify(self.workspace, "app")["status"], "not_configured")
 
-    def test_no_minecraft_build_without_wrapper(self):
+    @patch("core.pipeline.shutil.which", return_value=None)
+    def test_no_minecraft_build_without_wrapper(self, _):
         self.assertEqual(verify(self.workspace, "minecraft")["status"], "not_configured")
 
     @patch("core.pipeline.verify", return_value={"status": "passed", "exit_code": 0})
