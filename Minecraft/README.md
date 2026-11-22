@@ -1,34 +1,28 @@
-# Minecraft Development Toolkit
+# Minecraft Builder
 
-A coordinated set of Agent Skills for Minecraft Java development and operations. Designed for Claude Code and other clients that understand the Agent Skills folder format. **Not** a Minecraft mod, running agent, or MCP server.
-
-## Scope
-
-- Fabric, NeoForge and Paper development
-- Datapacks, world generation and resource assets
-- Server operations, automated testing and release checks
-- AI/MCP integration with explicit permission boundaries
-- Architecture and cross-skill handoffs
-
-## How to use
-
-Copy a selected `Minecraft/skills/<skill-name>` directory to your agent's skills directory, e.g. `~/.claude/skills/` for Claude Code or project-local `.agents/skills/` for compatible Codex installations. Do not load incompatible Fabric and NeoForge instructions for the same task unless explicitly designing a multiloader project.
-
-For a Fabric 1.21.1 project, start with `minecraft-architecture`, `minecraft-fabric` and `minecraft-testing`. Pin dependencies using the project's existing build files; no game versions or APIs are assumed compatible without verification.
-
-Validate from the repository root:
+Independent skills, executable runtime and deterministic fresh-project generator for
+Minecraft Java 1.21.1. Supported reference targets: Fabric, Paper, NeoForge and datapack.
+Loader APIs are kept separate. These bounded scaffolds do not prove authenticated AI synthesis.
 
 ```bash
-python3 scripts/validate_skills.py
-python3 -m unittest discover -s tests -v
+python -m distribution.cli install minecraft --target ../skills
+python -m core.builder_cli create --spec examples/briefs/minecraft.json --workspace ../new-mod
 ```
 
-The validator checks all current skill directories: `skills/`, `Minecraft/skills/`, `Universal/skills/`, `Applications/skills/`, `AppBuilder/skills/`, and `WebBuilder/skills/`.
+In an installed skill, the launcher is `minecraft-architecture/runtime/builder.py`;
+the matching example brief is in that runtime's `examples/briefs/` directory. No other
+builder is required. Python 3.11+ runs the generator; builds need Java 21 and Gradle 8.14.3.
 
-## Design
+The Fabric brief controls mod, block and standalone-item IDs. Outputs include a shaped
+recipe, original procedural PNG textures, models/blockstates and English/Czech localization.
+The CI script creates a new project, compiles/remaps a JAR, independently inspects it and,
+with explicit EULA acceptance, asserts live block/item/recipe registration in a disposable
+loopback server. Production-JAR and client-visual scopes are reported separately.
 
-All skills share a simple contract: inspect project and version -> plan -> implement or diagnose -> test -> report evidence. The architecture skill coordinates cross-domain work; the offline workflow tracker in `scripts/workflow.py` records stages but does not execute AI agents.
+Paper/NeoForge scaffolds have separate build configurations. A datapack gets versioned
+metadata, a copper recipe and load function. Static/datapack validation is not a game run.
+See the repository's `docs/VERIFICATION.md` for actual outcomes and the compatibility
+checklist in `Minecraft/COMPATIBILITY.md` for an existing project.
 
-## Limits
-
-These skills do not guarantee correct builds or working Minecraft gameplay. They have not been validated against a live Minecraft installation. The toolkit is unofficial and not affiliated with Mojang, Microsoft, Anthropic or OpenAI.
+Run the bundled read-only Cleaner before delivery. Never operate on user worlds or
+publish game content automatically. No game binaries or third-party textures are bundled.

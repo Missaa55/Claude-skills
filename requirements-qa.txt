@@ -1,0 +1,2 @@
+# Optional browser QA only; builder runtime and reference projects use stdlib.
+playwright==1.58.0

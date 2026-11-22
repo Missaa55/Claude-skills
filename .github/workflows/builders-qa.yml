@@ -1,0 +1,171 @@
+name: Builders real QA
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: builders-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  optional-blender:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install optional renderer only in disposable CI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends blender
+      - name: Render actual original scene on CPU
+        run: blender --background --factory-startup --disable-autoexec --python WebBuilder/skills/claude-image-studio/scripts/render_scene.py -- --output .artifacts/assets/original-electrical-scene.png --width 960 --height 640
+      - name: Check actual file metadata
+        run: python WebBuilder/skills/claude-image-studio/scripts/asset_studio.py record --file .artifacts/assets/original-electrical-scene.png --origin blender --provider "Blender CPU" --output .artifacts/assets/scene-provenance.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: original-blender-asset
+          include-hidden-files: true
+          path: .artifacts/assets/*
+          if-no-files-found: error
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - run: python -m pip install -r requirements-qa.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: npm install --ignore-scripts --no-audit --no-fund --prefix .tools/lighthouse lighthouse@12.8.2
+      - name: Actual browser journeys, axe, screenshots and Lighthouse
+        run: python scripts/qa_browser.py --output .artifacts/browser --lighthouse-deps .tools/lighthouse/node_modules
+      - name: Both electrical concepts (research fixture is explicitly simulated)
+        run: python scripts/qa_designer.py --simulate-research electrical --workspace .artifacts/design-electrical --output .artifacts/design-electrical-evidence
+      - name: Both footwear concepts (research fixture is explicitly simulated)
+        run: python scripts/qa_designer.py --simulate-research footwear --workspace .artifacts/design-footwear --output .artifacts/design-footwear-evidence
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: browser-evidence
+          include-hidden-files: true
+          path: |
+            .artifacts/browser/*.png
+            .artifacts/browser/*.json
+            .artifacts/browser/*.html
+            .artifacts/browser/*.log
+            .artifacts/design-*-evidence/*.png
+            .artifacts/design-*-evidence/*.json
+            .artifacts/design-*/design-comparison.json
+          if-no-files-found: error
+  distributions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m distribution.bundle build all --output .artifacts/packages
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: standalone-builders
+          include-hidden-files: true
+          path: .artifacts/packages/*
+          if-no-files-found: error
+  lifecycle-and-references:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -v
+      - run: python scripts/smoke_modules.py all
+  minecraft:
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [fabric, paper, neoforge, datapack]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          gradle-version: '8.14.3'
+      - name: Generate new project, build and inspect
+        run: python scripts/qa_minecraft.py --kind ${{ matrix.kind }} --output .artifacts/minecraft-${{ matrix.kind }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: minecraft-${{ matrix.kind }}
+          include-hidden-files: true
+          path: |
+            .artifacts/minecraft-${{ matrix.kind }}/result.json
+            .artifacts/minecraft-${{ matrix.kind }}/*.log
+            .artifacts/minecraft-${{ matrix.kind }}/*.zip
+            .artifacts/minecraft-${{ matrix.kind }}/project/build/libs/*.jar
+          if-no-files-found: error
+  fabric-server:
+    # Repository owner explicitly accepted EULA for this isolated test on 2026-11-22.
+    # Forks must make their own EULA decision. No game binaries/worlds are distributed.
+    if: github.repository == 'Missaa55/Claude-skills' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          gradle-version: '8.14.3'
+      - name: Fresh project and live server registry checks
+        run: python scripts/qa_minecraft.py --kind fabric --output .artifacts/fabric-server --accept-eula
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: fabric-live-server
+          include-hidden-files: true
+          path: |
+            .artifacts/fabric-server/result.json
+            .artifacts/fabric-server/*.log
+            .artifacts/fabric-server/project/build/libs/*.jar
+          if-no-files-found: error

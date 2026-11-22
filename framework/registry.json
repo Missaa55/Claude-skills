@@ -114,7 +114,8 @@
         "webbuilder-publishing",
         "webbuilder-cms",
         "webbuilder-integration",
-        "webbuilder-quality-cleaner"
+        "webbuilder-quality-cleaner",
+        "claude-image-studio"
       ]
     },
     "appbuilder": {
@@ -331,6 +332,16 @@
       "unnecessary data",
       "unused files",
       "placeholder cleanup"
+    ],
+    "claude-image-studio": [
+      "image generation",
+      "realistic image",
+      "generate image",
+      "blender",
+      "cc0",
+      "photorealistic",
+      "obrazky",
+      "fotografie"
     ]
   }
 }
