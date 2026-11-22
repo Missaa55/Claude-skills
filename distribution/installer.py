@@ -6,7 +6,6 @@ from pathlib import Path
 import hashlib
 import json
 import os
-import shutil
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +37,16 @@ def _source_files(module: str, root: Path) -> dict[str, bytes]:
                 files[rel] = file.read_bytes()
     if not files or not any(p.endswith("/SKILL.md") for p in files):
         raise ValueError("Module has no skills")
+    # Ship the working read-only cleaner INSIDE the selected builder's skill.
+    # A single-module install must not require the rest of this repository.
+    cleaner_skill = {"minecraft": "minecraft-quality-cleaner",
+                     "app": "appbuilder-quality-cleaner",
+                     "web": "webbuilder-quality-cleaner"}[module]
+    source = root / "quality" / "cleaner.py"
+    if source.is_symlink() or not source.is_file():
+        raise FileNotFoundError(f"Missing standalone cleaner: {source}")
+    rel = f"{cleaner_skill}/scripts/cleaner.py"
+    files[rel] = source.read_bytes()
     return files
 
 def _state(target: Path) -> dict:
@@ -121,7 +130,11 @@ def uninstall(module: str, target: Path) -> dict:
             parent.rmdir()
             parent = parent.parent
     del state["modules"][module]
-    _write_atomic(target / STATE, (json.dumps(state, indent=2, sort_keys=True) + "\n").encode())
+    if state["modules"]:
+        _write_atomic(target / STATE, (json.dumps(state, indent=2, sort_keys=True) + "\n").encode())
+    else:
+        # Do not leave our state file behind after removing the final module.
+        (target / STATE).unlink(missing_ok=True)
     return {"module": module, "removed": len(files)}
 
 def status(target: Path) -> dict:
