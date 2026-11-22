@@ -7,3 +7,12 @@ Requires JDK 21 and Gradle 8.14.3. In CI, setup-gradle provides Gradle; locally 
 This example is a **real source project**. A successful Gradle build demonstrates Java compilation, resource processing and Fabric remapping. It does not demonstrate that the mod has been launched in Minecraft or that the crafting recipe works in-game. Those require a separate game/integration test.
 
 The `tests/test_fabric_fixture.py` checks static asset/recipe structure; it is not a substitute for the Gradle build.
+
+## Verified CI evidence (2026-11-22)
+
+A real GitHub Actions Gradle build with Java 21 and Yarn mappings compiled and remapped the mod, validated the production JAR contents and uploaded artifact `fabric-1211-verified-mod`:
+
+- [Successful build workflow](https://github.com/Missaa55/Claude-skills/actions/runs/45052898392)
+- [Build artifacts](https://github.com/Missaa55/Claude-skills/actions/runs/45052898392#artifacts)
+
+Prior attempts failed on Loom Java-version compatibility, Loom plugin ID, and Mojang/Yarn mapping mismatch; all three were corrected based on real Gradle errors. No Minecraft client/server in-game test has been performed.
