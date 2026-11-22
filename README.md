@@ -47,6 +47,14 @@ composition and visual language; at least five of seven dimensions must differ. 
 scrolling and reduced motion remain supported. A three-year horizon is a **design intent**,
 not a forecast. See [designer details](docs/DESIGNER.md).
 
+For realistic visual assets, the separately uploadable
+[Claude Image Studio](WebBuilder/skills/claude-image-studio/SKILL.md) skill uses an
+actually connected image tool, with Hugging Face MCP as the documented no-paid-API
+route. A remote generator needs no local GPU; account authorization, availability and
+free quota still apply. Optional Blender CPU rendering is separately tested.
+Authenticated Claude/HF image generation remains **NOT VERIFIED**. Follow the
+[Czech setup guide](docs/USER_GUIDE.cs.md) for the standalone skill ZIP.
+
 ## Install one builder or any combination
 
 ```bash

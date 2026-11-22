@@ -62,3 +62,9 @@ Hashes provide corruption/integrity checks, not cryptographic publisher identity
 installer or automatic self-updater is claimed. Toolchains and provider credentials are
 separate. CI tests lifecycle/update/bundles on Windows, Linux and macOS; see the current
 [verification report](../docs/VERIFICATION.md), not the historical file-count tables.
+
+`claude-image-studio-0.2.0.zip` is an additional, standalone Claude skill upload, not a
+fourth development Builder. Its ZIP contains the skill folder at the root. Upload it
+through Claude's Skills interface or extract into a new Claude Code skills folder;
+see the [Czech connection guide](../docs/USER_GUIDE.cs.md). No image model, paid API key
+or Blender executable is embedded. Image-provider authentication is separate.

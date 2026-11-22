@@ -21,7 +21,9 @@ python -m core.pipeline_cli web --task "Create a website" --workspace ./disposab
 The illustrative digest must be replaced with a real installed image. Docker is mandatory,
 network is disabled, no host credentials/home/socket are mounted, and no host fallback exists.
 Authenticated Claude/Codex container setup is **NOT VERIFIED** and no credential broker is
-implemented. Expect a clear blocked/failed result until that environment is prepared.
+implemented. The offline CLI policy cannot reach a remote provider; preparing an image
+alone does not solve that. Provider authentication and controlled egress still require
+implementation/review before a real AI run can work. Expect a blocked/failed result.
 Do not use host execution to work around this boundary for untrusted AI output.
 
 For the repository-owned, reviewed reference templates only:
