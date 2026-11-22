@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "claudeskills_block",
+  "version": "${version}",
+  "name": "Claude Skills Workshop Block",
+  "description": "A minimal Fabric 1.21.1 block and crafting recipe integration fixture.",
+  "environment": "*",
+  "entrypoints": {"main": ["dev.claudeskills.ExampleMod"]},
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
