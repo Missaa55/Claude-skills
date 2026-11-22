@@ -1,0 +1,60 @@
+name: Fabric 1.21.1 real build
+on:
+  push:
+    paths:
+      - 'examples/fabric-1211/**'
+      - 'tests/test_fabric_fixture.py'
+      - '.github/workflows/fabric-e2e.yml'
+  pull_request:
+    paths:
+      - 'examples/fabric-1211/**'
+      - 'tests/test_fabric_fixture.py'
+      - '.github/workflows/fabric-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fabric-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.8.2'
+      - name: Validate fixture structure (static only)
+        run: python3 -m unittest discover -s tests -p test_fabric_fixture.py -v
+      - name: Compile and remap actual Fabric mod
+        working-directory: examples/fabric-1211
+        run: gradle --no-daemon --stacktrace build
+      - name: Verify remapped mod JAR
+        working-directory: examples/fabric-1211
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, json
+          jars = sorted(Path('build/libs').glob('claudeskills-block-*.jar'))
+          jars = [j for j in jars if not j.name.endswith('-sources.jar') and not j.name.endswith('-dev.jar')]
+          assert jars, 'No production remapped JAR'
+          with zipfile.ZipFile(jars[0]) as z:
+              names = set(z.namelist())
+              assert 'fabric.mod.json' in names
+              assert 'dev/claudeskills/ExampleMod.class' in names
+              assert 'data/claudeskills_block/recipe/workshop_block.json' in names
+              meta = json.loads(z.read('fabric.mod.json'))
+              assert meta['id'] == 'claudeskills_block'
+              assert meta['version'] == '1.0.0'
+          print('VERIFIED_JAR', jars[0])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: fabric-1211-verified-mod
+          path: examples/fabric-1211/build/libs/claudeskills-block-*.jar
+          if-no-files-found: error
