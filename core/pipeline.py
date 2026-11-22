@@ -5,6 +5,7 @@ import re
 import shutil
 import sys
 import uuid
+import zipfile
 from core.artifacts import inspect
 from core.process import Policy, run, redact
 from core.runtime import RunRequest, execute
@@ -31,7 +32,21 @@ def build_prompt(builder: str, task: str, *, root: Path | None = None) -> str:
     root = root or Path(__file__).resolve().parents[1]
     base = checked_target(root / SKILLS[builder])
     chunks = []
+    selected = None
+    if builder == "minecraft":
+        selected = {"minecraft-architecture", "minecraft-testing", "minecraft-assets", "minecraft-release", "minecraft-quality-cleaner"}
+        for target in ("fabric", "neoforge", "paper", "datapack", "worldgen"):
+            if re.search(r"\b" + target + r"\b", task, re.I):
+                selected.add("minecraft-" + target)
+    elif builder == "web":
+        selected = {"webbuilder-orchestrator", "webbuilder-design-system", "webbuilder-layout", "webbuilder-content-seo", "webbuilder-accessibility", "webbuilder-performance", "webbuilder-visual-qa", "webbuilder-security", "webbuilder-quality-cleaner", "webbuilder-research"}
+        if re.search(r"\bcms\b", task, re.I):
+            selected.add("webbuilder-cms")
+        if re.search(r"image|photo|obráz|obraz|fot|blender|cc0|asset", task, re.I):
+            selected.add("claude-image-studio")
     for file in sorted(base.glob("*/SKILL.md")):
+        if selected is not None and file.parent.name not in selected:
+            continue
         checked_target(file)
         if file.stat().st_size > 20000:
             raise ValueError("Oversized skill")
@@ -87,7 +102,7 @@ def verify(workspace: Path, builder: str, *, timeout: int = 120, approved: bool 
             return {"status": "failed", "reason": "No executed tests in runner output", "checks": results}
     try:
         artifacts = inspect(workspace, builder)
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
         return {"status": "failed", "reason": str(exc), "checks": results, "artifacts": []}
     cleaner = scan(workspace, builder)
     return {"status": "passed", "checks": results, "artifacts": artifacts,

@@ -6,7 +6,6 @@ import hmac
 from http.cookies import SimpleCookie, CookieError
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
-import os
 from pathlib import Path
 import re
 import secrets
@@ -175,7 +174,10 @@ class Handler(BaseHTTPRequestHandler):
     def scoped(self, db, table, identity, user):
         row = db.execute(f"SELECT * FROM {table} WHERE id=?", (identity,)).fetchone()
         owner = "owner_id" if table == "customers" else "assigned_to"
-        if row is None or user["role"] == "technician" and row[owner] != user["id"]:
+        allowed = row is not None and (user["role"] != "technician" or row[owner] == user["id"])
+        if row is not None and table == "customers" and user["role"] == "technician" and not allowed:
+            allowed = db.execute("SELECT 1 FROM jobs WHERE customer_id=? AND assigned_to=? LIMIT 1", (identity, user["id"])).fetchone() is not None
+        if not allowed:
             raise ApiError(404, "Záznam neexistuje.")
         return row
 
@@ -260,6 +262,8 @@ class Handler(BaseHTTPRequestHandler):
         if identity is None and method == "GET":
             owner = "owner_id" if table == "customers" else "assigned_to"
             where, args = (f" WHERE {owner}=?", (user["id"],)) if user["role"] == "technician" else ("", ())
+            if table == "customers" and user["role"] == "technician":
+                where, args = " WHERE owner_id=? OR id IN (SELECT customer_id FROM jobs WHERE assigned_to=?)", (user["id"], user["id"])
             rows = db.execute(f"SELECT * FROM {table}{where} ORDER BY id DESC LIMIT 500", args).fetchall()
             return self.reply(200, [dict(row) if table == "customers" else self.job(db, row["id"], user) for row in rows])
         previous = self.scoped(db, table, identity, user) if identity else None

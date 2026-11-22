@@ -3,7 +3,6 @@ from pathlib import Path
 import hashlib
 import html
 import json
-import os
 import re
 import shutil
 import struct
@@ -168,8 +167,10 @@ public final class WorkshopMod implements ModInitializer {{
         if (Boolean.getBoolean("builders.verify")) ServerLifecycleEvents.SERVER_STARTED.register(server -> {{
             if (Registries.BLOCK.get(Identifier.of(ID, "{block}")) != CABLE) throw new IllegalStateException("Missing block");
             if (Registries.ITEM.get(Identifier.of(ID, "{item}")) != TESTER) throw new IllegalStateException("Missing item");
-            if (server.getRecipeManager().get(Identifier.of(ID, "{block}")).isEmpty()) throw new IllegalStateException("Missing recipe");
-            System.out.println("BUILDERS_RUNTIME_VERIFIED " + ID + ":{block} " + ID + ":{item} recipe=present");
+            var recipe = server.getRecipeManager().get(Identifier.of(ID, "{block}")).orElseThrow(() -> new IllegalStateException("Missing recipe"));
+            var output = recipe.value().getResult(server.getRegistryManager());
+            if (!output.isOf(CABLE.asItem()) || output.getCount() != 4) throw new IllegalStateException("Invalid recipe output");
+            System.out.println("BUILDERS_RUNTIME_VERIFIED " + ID + ":{block} " + ID + ":{item} recipe=present output_count=4");
             server.stop(false);
         }});
     }}

@@ -1,53 +1,33 @@
-# AppBuilder — architecture blueprint
+# AppBuilder
 
-Status: design specification, not a functioning autonomous app builder.
+Independent runtime, four portable skills and a runnable reference job-management app.
+The reference uses Python's standard library, SQLite and browser-native HTML/CSS/JS.
+It includes sessions, admin/technician/viewer permissions, customers, jobs, status,
+materials, integer-cent prices and REST endpoints. All example data is synthetic.
 
-## Objective
-
-Convert a product request into a reviewed application project using a small number of specialized roles and repeatable quality gates. Keep model provider, generated code, and hosting independent.
-
-## Tooling
-
-Design and verification use widely known tools: shadcn/ui, Storybook, Playwright, axe-core and OWASP ZAP.
-
-## Proposed project layout
-
-```text
-AppBuilder/
-  README.md
-  contracts/
-    task.schema.json
-    review.schema.json
-  skills/
-    appbuilder-orchestrator/SKILL.md
-    appbuilder-design/SKILL.md
-    appbuilder-quality/SKILL.md
-  templates/          # future
-  evaluation/         # future
+```bash
+python -m core.builder_cli create --spec examples/briefs/app.json --workspace ../new-app
+python -m core.builder_cli check app --workspace ../new-app --execute --trusted-local
+python ../new-app/server.py init --demo
+python ../new-app/server.py serve --port 8787
 ```
 
-## Handoff contract
+Review source before host execution. Initialization generates a new demo password;
+no default credentials or public registration endpoint exists. Admin manages all records;
+technicians access their assigned jobs and associated/owned customers; viewers read only.
+Mutations require same-origin JSON requests and a per-session CSRF token. Passwords use
+salted scrypt; session tokens are stored as hashes and expire. Material/calculation logic
+uses integers, never floating point money.
 
-1. **Discovery:** requirements, constraints, acceptance criteria, unknowns.
-2. **Architecture:** framework, modules, data model, trust boundaries.
-3. **Design:** tokens, components, accessibility, responsive behavior.
-4. **Implementation:** scoped file changes, dependency constraints.
-5. **Verification:** unit/integration/E2E tests, accessibility and security.
-6. **Review:** evidence-backed findings, regression loop and approval.
-7. **Delivery:** reproducible build, deployment plan, rollback and documentation.
+`build.py` produces a runnable `dist/` with server/static/migrations. The integration
+suite starts actual loopback HTTP servers and disposable SQLite databases; browser QA
+exercises real user journeys. Migration checksums reject changed applied migrations.
 
-A failed mandatory gate returns the task to implementation. All external side effects require user approval. No skill may claim a test was run based on a plan alone.
+Installation: `python -m distribution.cli install app`. The installed launcher is
+`appbuilder-orchestrator/runtime/builder.py`, with its own matching example brief.
+No Minecraft/WebBuilder or additional skill collection is required.
 
-## Quality gates
-
-- Build and static analysis
-- Unit and integration tests
-- E2E tests for critical user journeys
-- Automated accessibility checks plus manual keyboard review
-- Secret detection and dependency review
-- Screenshot/visual review across viewport sizes
-- Explicit approval before production deployment
-
-## Non-goals for this initial design
-
-No AI runtime, code generation engine, live preview server, automated deployment, or guarantee of application quality is implemented here.
+This is a local reference, not a public production server: TLS/reverse proxy, operational
+backups, pagination beyond the 500-record list cap, password reset and broader production
+hardening are outside the current implementation. Authenticated free-form Claude/Codex
+generation is NOT VERIFIED. Read the repository verification report before claiming readiness.

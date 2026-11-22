@@ -9,8 +9,32 @@ concurrency:
   group: builders-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  optional-blender:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install optional renderer only in disposable CI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends blender
+      - name: Render actual original scene on CPU
+        run: blender --background --factory-startup --disable-autoexec --python WebBuilder/skills/claude-image-studio/scripts/render_scene.py -- --output .artifacts/assets/original-electrical-scene.png --width 960 --height 640
+      - name: Check actual file metadata
+        run: python WebBuilder/skills/claude-image-studio/scripts/asset_studio.py record --file .artifacts/assets/original-electrical-scene.png --origin blender --provider "Blender CPU" --output .artifacts/assets/scene-provenance.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: original-blender-asset
+          path: .artifacts/assets/*
+          if-no-files-found: error
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -27,6 +51,10 @@ jobs:
       - run: npm install --ignore-scripts --no-audit --no-fund --prefix .tools/lighthouse lighthouse@12.8.2
       - name: Actual browser journeys, axe, screenshots and Lighthouse
         run: python scripts/qa_browser.py --output .artifacts/browser --lighthouse-deps .tools/lighthouse/node_modules
+      - name: Both electrical concepts (research fixture is explicitly simulated)
+        run: python scripts/qa_designer.py --simulate-research electrical --workspace .artifacts/design-electrical --output .artifacts/design-electrical-evidence
+      - name: Both footwear concepts (research fixture is explicitly simulated)
+        run: python scripts/qa_designer.py --simulate-research footwear --workspace .artifacts/design-footwear --output .artifacts/design-footwear-evidence
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -36,6 +64,9 @@ jobs:
             .artifacts/browser/*.json
             .artifacts/browser/*.html
             .artifacts/browser/*.log
+            .artifacts/design-*-evidence/*.png
+            .artifacts/design-*-evidence/*.json
+            .artifacts/design-*/design-comparison.json
           if-no-files-found: error
   distributions:
     runs-on: ubuntu-latest

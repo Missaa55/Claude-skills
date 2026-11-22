@@ -1,118 +1,85 @@
-# Claude Skills — practical development workflows
+# Claude Skills — independent development builders
 
-A collection of reusable development skills and offline tools for reviewing changes, investigating bugs, and improving documentation. All examples are synthetic. No private application code, credentials, customer records, or proprietary datasets are included.
+Three independently installable builders with executable runtimes, portable skills,
+brief-driven reference projects, read-only quality analysis and reproducible QA.
+Requires Python 3.11+. The runtime/reference web/app projects use the standard library.
+Browser QA additionally uses Playwright. Minecraft compilation requires Java 21 and Gradle 8.14.3.
 
-## Modular domains
+| Builder | Implemented reference | Verification boundary |
+| --- | --- | --- |
+| Minecraft | New Fabric 1.21.1 mod with block, item, recipe, original textures and two locales; Paper/NeoForge and datapack scaffolds | Real compilation/JAR inspection and Fabric dedicated-server assertions; client visuals are separate |
+| AppBuilder | SQLite job manager, sessions, three roles, customers, jobs, materials, integer-cent calculations and REST API | Real HTTP/database suites and browser journeys; loopback reference, not a production hosting stack |
+| WebBuilder | Responsive electrical-services site and two-concept designer for electrical/footwear briefs | Real browser screenshots, navigation/forms, responsive checks and axe; research signals are static observations |
 
-- [Minecraft](Minecraft/README.md): mods, servers, assets and AI integrations
-- [Universal](Universal/README.md): planning, security, testing and performance
-- [Applications](Applications/README.md): frontend, APIs, databases, desktop/mobile and deployment
-- [AppBuilder](AppBuilder/README.md): architecture, design, quality gates and delivery workflow
-- [WebBuilder](WebBuilder/README.md): website research, design, SEO, responsive QA and publishing
-- [Framework](framework/README.md): deterministic offline skill routing and registry
+**Generation is currently deterministic and explicitly labelled. Authenticated autonomous
+Claude/Codex project generation is NOT VERIFIED.** Provider adapters and bounded repair
+orchestration exist, but untrusted execution fails closed without a prepared Docker environment.
+See the [evidence and remaining limitations](docs/VERIFICATION.md).
 
-```bash
-python3 framework/route.py "Build a minecraft fabric mod with a backend api"
-```
-
-Routing is advisory; it does not run AI agents or build applications.
-
-## Minecraft development
-
-A dedicated [Minecraft toolkit](Minecraft/README.md) contains 11 coordinated skills for Fabric, NeoForge, Paper, datapacks, world generation, assets, server operations, testing, release management, AI integrations and architecture.
-
-## Included skills
-
-| Skill | Purpose |
-| --- | --- |
-| [Change Reviewer](skills/change-reviewer/SKILL.md) | Review a patch for correctness, regressions, security, and missing tests |
-| [Bug Investigator](skills/bug-investigator/SKILL.md) | Reproduce a bug, isolate its cause, and propose a minimal fix |
-| [Documentation Auditor](skills/documentation-auditor/SKILL.md) | Check whether docs match the repository and commands |
-| [Workflow Orchestrator](skills/workflow-orchestrator/SKILL.md) | Coordinate review, investigation, tests and documentation with evidence |
-
-## Install
-
-Copy a skill directory into your Claude Code skills directory:
+## Start from a fresh brief
 
 ```bash
-mkdir -p ~/.claude/skills
-cp -R skills/change-reviewer ~/.claude/skills/
+python -m core.builder_cli create --spec examples/briefs/web.json --workspace ../new-site
+# Review the generated source before approving host execution:
+python -m core.builder_cli check web --workspace ../new-site --execute --trusted-local
+python ../new-site/server.py --port 8080
 ```
 
-Alternatively, keep the skill files in your repository and ask your coding assistant to follow their instructions. No API key or paid service is needed for the content of these skills.
-
-## Integrated workflow
-
-The offline workflow tracker records six stages in a JSON file and produces an auditable report. It does not invoke AI models or execute tests itself. See [quick-start](docs/QUICKSTART.md), [architecture](docs/ARCHITECTURE.md), and [roadmap](docs/ROADMAP.md).
+Use `app.json` or `minecraft.json` for the other builders. Existing directories are
+never overwritten. `builder-manifest.json` records source hashes and generation provenance.
+The application initializes its demo user explicitly and generates a fresh password:
 
 ```bash
-python3 scripts/workflow.py init --task "Investigate a sorting regression" --output workflow.json
-python3 scripts/workflow.py report --file workflow.json
+python ../new-app/server.py init --demo
+python ../new-app/server.py serve --port 8787
 ```
 
-## Validation
-
-Run the standard-library-only validator:
+## Research and two distinct design directions
 
 ```bash
-python3 scripts/validate_skills.py
-python3 -m unittest discover -s tests -v
+python -m core.builder_cli research --candidates examples/research/electrical-candidates.json --output research.json
+python -m core.builder_cli design --industry electrical --name "Jistič Elektro" --task "Web elektro firmy s přehledným postupem realizace" --research research.json --workspace ../two-designs
 ```
 
-The validator checks metadata, required sections, and unsafe credential-like patterns; it is **not** a comprehensive security audit.
+The designer requires **20 successfully inspected distinct domains**, dated within seven days.
+Blocked/invalid-TLS sources are excluded. Each concept has its own typography, palette,
+composition and visual language; at least five of seven dimensions must differ. Native
+scrolling and reduced motion remain supported. A three-year horizon is a **design intent**,
+not a forecast. See [designer details](docs/DESIGNER.md).
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Please propose narrowly scoped changes, include an example and a test when practical, and never commit secrets or personal information.
-
-## Scope and status
-
-Early development: domain-specific skill collections, an offline routing utility, a workflow tracker, and unit tests. CI status must be checked separately. Skills are guidance, not executable security controls. Compatibility with third-party tools does not imply vendor endorsement.
-
-Licensed under MIT; see [LICENSE](LICENSE).
-
-## Experimental local runtime
-
-The new `core/` package can prepare or explicitly run an installed Claude Code or Codex CLI in a user-selected directory. It is **not sandboxed**, not an autonomous multi-agent builder, and is disabled by default.
+## Install one builder or any combination
 
 ```bash
-python3 -m core.cli web --provider claude --workspace . --prompt "Review this project"
-# Add --execute only if you trust the workspace and authorize the CLI run.
+python -m distribution.cli install minecraft --target ../test-skills
+python -m distribution.cli install app --target ../test-skills
+python -m distribution.cli install web --target ../test-skills
+python -m distribution.cli status --target ../test-skills
+python -m distribution.cli update web --target ../test-skills
+python -m distribution.cli uninstall web --target ../test-skills
 ```
 
-Read [architecture research](docs/OPEN_SOURCE_RESEARCH.md) before using the runtime. The web, app and Minecraft products remain independent; only runtime infrastructure is shared.
+Each installation includes its own executable runtime inside the orchestrator/architecture
+skill's `runtime/` directory and a standalone Cleaner. Use `--client codex` for
+`~/.agents/skills`, or the default Claude directory `~/.claude/skills`.
+User edits and unmanaged files are protected; updates/removal are journalled and locked.
+See [installation and independent ZIP packages](distribution/README.md) and the
+[Czech user guide](docs/USER_GUIDE.cs.md).
 
-## Install just one builder
-
-The offline modular installer copies only the selected builder's skill instructions to Claude Code. See [installation details](distribution/README.md).
+## Quality and development
 
 ```bash
-python3 -m distribution.cli install minecraft
-# Or: python3 -m distribution.cli install app
-# Or: python3 -m distribution.cli install web
-python3 -m distribution.cli status
-python3 -m distribution.cli uninstall minecraft
+python -m quality.cleaner web ../new-site
+python -m quality.cleaner app ../new-app --proposal
+python scripts/validate_skills.py
+python scripts/validate_registry.py
+python -m unittest discover -s tests -v
+python scripts/smoke_modules.py all
 ```
 
-Modules are independently installable and removable; no other builder is required. This is a **skill installer**, not an autonomous builder or a standalone executable package. Run commands from a cloned repository with Python 3.10+.
+Cleaner findings are review candidates, not proof of AI origin. It never applies changes
+or deletes files. See [Cleaner V2](quality/README.md), [security audit](docs/SECURITY_AUDIT.md),
+[architecture](docs/ARCHITECTURE.md), [pipeline](docs/PIPELINE.md) and [technical audit](docs/AUDIT_BUILDERS.md).
+The older dated audit/install reports preserve historical evidence and are superseded
+for current behavior by `docs/VERIFICATION.md`.
 
-## AI slop and unnecessary-data review
-
-All three builders now include their own `*-quality-cleaner` skill. The shared offline scanner applies separate web/app/Minecraft heuristics and **never deletes files**. See [Quality Cleaner](quality/README.md).
-
-```bash
-python3 -m quality.cleaner web ./site
-python3 -m quality.cleaner app ./application
-python3 -m quality.cleaner minecraft ./mod
-```
-
-Findings require human review; placeholder patterns are not reliable proof of AI authorship, and unused files cannot be safely determined by filename alone.
-
-## Experimental end-to-end builder pipeline
-
-The opt-in pipeline now loads **only** the selected builder's skills, invokes an installed Claude/Codex CLI, runs a predeclared build/test check and can retry failed checks up to three times. It does **not** isolate untrusted code, and generated-project success has not yet been demonstrated. See [pipeline instructions and safety warnings](docs/PIPELINE.md).
-
-```bash
-python3 -m core.pipeline_cli web --task "Create a landing page" --workspace ./my-site --provider claude
-# Add --execute only in a trusted workspace after reviewing the safety warning.
-```
+Licensed under MIT. Third-party sites, tools and game platforms do not endorse this project.

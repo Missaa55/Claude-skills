@@ -162,6 +162,15 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(self.request("/api/logout", "POST", {})[0], 200)
         self.assertEqual(self.request("/api/jobs")[0], 401)
 
+    def test_assigned_technician_can_access_attached_customer(self):
+        customer = self.customer()
+        code, job, _ = self.request("/api/jobs", "POST", {"title": "Assigned test", "customer_id": customer, "assigned_to": self.tech})
+        self.assertEqual(code, 201)
+        self.login("tech_test")
+        self.assertEqual(self.request(f"/api/customers/{customer}")[0], 200)
+        self.assertEqual(len(self.request("/api/customers")[1]), 1)
+        self.assertEqual(self.request(f"/api/jobs/{job['id']}", "PATCH", {"title": "Working", "customer_id": customer, "status": "in_progress"})[0], 200)
+
     def test_static_headers_and_missing_paths(self):
         code, body, headers = self.request("/")
         self.assertEqual(code, 200)

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import stat
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -29,6 +30,8 @@ class InstallerSecurityTests(unittest.TestCase):
                      "webbuilder-a/NUL", "webbuilder-a/x.", "webbuilder-a//x", "./webbuilder-a/x"):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 mod._destination(self.target, path, "web")
+        with self.assertRaises(ValueError):
+            mod._destination(self.target, "webbuilder-personal/notes.txt", "web")
 
     def test_corrupt_states_fail_before_mutation(self):
         self.target.mkdir()
@@ -164,6 +167,24 @@ class InstallerSecurityTests(unittest.TestCase):
         path = self.target / "appbuilder-design/SKILL.md"
         path.write_text("user modification")
         self.assertIn("appbuilder-design/SKILL.md", mod.status(self.target)["integrity"]["app"]["modified_or_missing"])
+
+    @unittest.skipUnless(os.name == "nt", "Windows read-only replacement denial")
+    def test_real_permission_denial_rolls_back_and_recovers(self):
+        mod.install("app", self.target)
+        before = self.snapshot()
+        dest = self.target / "appbuilder-design/SKILL.md"
+        sources = mod._source_files("app", mod.ROOT)
+        sources["appbuilder-design/SKILL.md"] += b"\nUpdate\n"
+        dest.chmod(stat.S_IREAD)
+        try:
+            with patch.object(mod, "_source_files", return_value=sources), self.assertRaises(PermissionError):
+                mod.install("app", self.target)
+            self.assertEqual(self.snapshot(), before)
+        finally:
+            dest.chmod(stat.S_IREAD | stat.S_IWRITE)
+        with patch.object(mod, "_source_files", return_value=sources):
+            mod.install("app", self.target)
+        self.assertTrue(dest.read_bytes().endswith(b"Update\n"))
 
 
 if __name__ == "__main__":

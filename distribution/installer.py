@@ -13,7 +13,11 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.2.0"
 MODULES = {"minecraft": "Minecraft/skills", "app": "AppBuilder/skills", "web": "WebBuilder/skills"}
-PREFIXES = {"minecraft": "minecraft-", "app": "appbuilder-", "web": "webbuilder-"}
+OWNED_SKILLS = {
+    "minecraft": {"minecraft-architecture", "minecraft-ai-integration", "minecraft-assets", "minecraft-datapack", "minecraft-fabric", "minecraft-neoforge", "minecraft-paper", "minecraft-quality-cleaner", "minecraft-release", "minecraft-server-ops", "minecraft-testing", "minecraft-worldgen"},
+    "app": {"appbuilder-orchestrator", "appbuilder-design", "appbuilder-quality", "appbuilder-quality-cleaner"},
+    "web": {"webbuilder-orchestrator", "webbuilder-research", "webbuilder-design-system", "webbuilder-layout", "webbuilder-content-seo", "webbuilder-accessibility", "webbuilder-performance", "webbuilder-visual-qa", "webbuilder-security", "webbuilder-publishing", "webbuilder-cms", "webbuilder-integration", "webbuilder-quality-cleaner", "claude-image-studio"},
+}
 STATE = ".claude-skills-install.json"
 JOURNAL = ".claude-skills-transaction.json"
 LOCK = ".claude-skills-lock"
@@ -60,7 +64,7 @@ def _name(name: str, module: str | None = None) -> str:
         raise ValueError(f"Unsafe installation path: {name}")
     if PurePosixPath(name).is_absolute() or len(parts) < 2:
         raise ValueError(f"Unsafe installation path: {name}")
-    if module and (module not in PREFIXES or not parts[0].startswith(PREFIXES[module])):
+    if module and (module not in OWNED_SKILLS or parts[0] not in OWNED_SKILLS[module]):
         raise ValueError(f"Path does not belong to module {module}: {name}")
     return name
 
@@ -234,6 +238,8 @@ def _recover(target: Path) -> bool:
         operations.append((path, before))
     # The complete journal is validated before restoring any files.
     for path, content in reversed(operations):
+        if _decode(_snapshot(path)) == content:
+            continue
         if content is None:
             path.unlink(missing_ok=True)
         else:

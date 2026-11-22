@@ -29,12 +29,23 @@ def main(argv=None):
             cmd.add_argument("--repairs", type=int, default=1)
     cmd = sub.add_parser("doctor")
     cmd.add_argument("provider", choices=("claude", "codex"))
+    cmd = sub.add_parser("research")
+    cmd.add_argument("--candidates", type=Path, required=True)
+    cmd.add_argument("--output", type=Path, required=True)
+    cmd.add_argument("--previous", type=Path)
+    cmd = sub.add_parser("design")
+    cmd.add_argument("--task", required=True)
+    cmd.add_argument("--name", required=True)
+    cmd.add_argument("--industry", choices=("electrical", "footwear"), required=True)
+    cmd.add_argument("--research", type=Path, required=True)
+    cmd.add_argument("--workspace", type=Path, required=True)
+    cmd.add_argument("--scroll", choices=("auto", "off", "story"), default="auto")
     args = parser.parse_args(argv)
     try:
         bundle = Path(__file__).resolve().parents[1] / "bundle.json"
         available = json.loads(bundle.read_text())["builder"] if bundle.exists() else None
         selected = json.loads(args.spec.read_text(encoding="utf-8")) if args.command == "create" else None
-        builder = selected.get("builder") if selected else getattr(args, "builder", None)
+        builder = selected.get("builder") if selected else "web" if args.command in ("research", "design") else getattr(args, "builder", None)
         if available and builder and builder != available:
             raise ValueError("This standalone package contains only " + available)
         if args.command == "create":
@@ -43,6 +54,17 @@ def main(argv=None):
             result = doctor(args.provider)
         elif args.command == "clean":
             result = scan(args.workspace, args.builder)
+        elif args.command == "research":
+            from builders.research import collect, compare_samples
+            report = collect(json.loads(args.candidates.read_text(encoding="utf-8")))
+            if args.previous:
+                report["longitudinal_trend"] = compare_samples(report, json.loads(args.previous.read_text(encoding="utf-8")))
+            with args.output.open("x", encoding="utf-8") as stream:
+                json.dump(report, stream, indent=2, ensure_ascii=False)
+            result = {"status": report["status"], "analyzed": report["analyzed"], "attempted": report["attempted"], "output": str(args.output), "evidence_label": "STATIC CHECK"}
+        elif args.command == "design":
+            from builders.designer import design
+            result = design(args.task, args.name, args.industry, json.loads(args.research.read_text(encoding="utf-8")), args.workspace, scroll=args.scroll)
         else:
             policy = Policy("trusted-local" if args.trusted_local else "docker", args.image)
             if not args.execute:
@@ -56,6 +78,8 @@ def main(argv=None):
         parser.exit(1, f"Error: {exc}\n")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if args.command in ("check", "run") and args.execute and result["status"] not in ("passed", "checks_passed"):
+        return 1
+    if args.command == "research" and result["status"] != "ready":
         return 1
     return 0
 

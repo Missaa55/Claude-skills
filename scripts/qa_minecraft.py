@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
+import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,9 +64,39 @@ def main():
                 server = run([gradle, "--no-daemon", "--console=plain", "runServer"], project, approved=True, policy=Policy("trusted-local"), timeout=600)
                 log = server["stdout"] + server["stderr"]
                 (out / "server.log").write_text(log, encoding="utf-8")
-                expected = f"BUILDERS_RUNTIME_VERIFIED {spec['mod_id']}:{spec['block_id']} {spec['mod_id']}:{spec['item_id']} recipe=present"
+                expected = f"BUILDERS_RUNTIME_VERIFIED {spec['mod_id']}:{spec['block_id']} {spec['mod_id']}:{spec['item_id']} recipe=present output_count=4"
                 assert server["status"] == "passed" and expected in log, "Server registration assertions failed; see server.log"
                 result.update(runtime="REAL VERIFIED", runtime_marker=expected, client_visual_test="NOT VERIFIED")
+                # Load the actual remapped production JAR too, not only Loom's dev classes.
+                production = out / "production-server"
+                production.mkdir()
+                mods = production / "mods"
+                mods.mkdir()
+                tested_jar = project / result["artifacts"][0]["path"]
+                shutil.copyfile(tested_jar, mods / tested_jar.name)
+                api_version = "0.116.18+1.21.1"
+                cache = Path.home() / ".gradle/caches/modules-2/files-2.1/net.fabricmc.fabric-api/fabric-api" / api_version
+                api = list(cache.glob("*/*.jar"))
+                assert len(api) == 1, "Expected one pinned production Fabric API dependency"
+                shutil.copyfile(api[0], mods / api[0].name)
+                shutil.copyfile(run_dir / "eula.txt", production / "eula.txt")
+                shutil.copyfile(run_dir / "server.properties", production / "server.properties")
+                launcher_url = "https://meta.fabricmc.net/v2/versions/loader/1.21.1/0.20.1/1.1.2/server/jar"
+                with urllib.request.urlopen(launcher_url, timeout=30) as response:
+                    launcher_bytes = response.read(2_000_001)
+                assert len(launcher_bytes) <= 2_000_000, "Oversized launcher download"
+                launcher = production / "fabric-launcher.jar"
+                launcher.write_bytes(launcher_bytes)
+                java = shutil.which("java")
+                assert java, "Java 21 required"
+                live = run([java, "-Xmx1G", "-Dbuilders.verify=true", "-jar", str(launcher), "nogui"], production,
+                           approved=True, policy=Policy("trusted-local"), timeout=600)
+                live_log = live["stdout"] + live["stderr"]
+                (out / "production-server.log").write_text(live_log, encoding="utf-8")
+                assert live["status"] == "passed" and expected in live_log, "Production JAR server assertions failed"
+                result.update(production_runtime="REAL VERIFIED", production_jar_sha256=hashlib.sha256(tested_jar.read_bytes()).hexdigest(),
+                              fabric_api_sha256=hashlib.sha256(api[0].read_bytes()).hexdigest(),
+                              launcher_url=launcher_url, launcher_sha256=hashlib.sha256(launcher_bytes).hexdigest())
     except (OSError, ValueError, AssertionError, zipfile.BadZipFile) as exc:
         result.update(status="failed", evidence_label="FAILED", reason=str(exc))
     (out / "result.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

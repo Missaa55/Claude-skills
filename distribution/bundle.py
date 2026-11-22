@@ -27,6 +27,8 @@ def payload(module, root=ROOT):
     directories = ["core", "quality", MODULES[module]]
     if module in ("web", "app"):
         directories.append("builders/templates/" + module)
+    if module == "web":
+        directories.append("builders/templates/footwear")
     for directory in directories:
         base = checked_target(root / directory)
         for path in sorted(base.rglob("*")):
@@ -37,6 +39,13 @@ def payload(module, root=ROOT):
     for rel in ("builders/__init__.py", "builders/scaffold.py", "distribution/__init__.py", "distribution/cli.py", "distribution/installer.py", "distribution/bundle.py", "LICENSE", f"examples/briefs/{module}.json"):
         path = checked_target(root / rel)
         entries[rel] = path.read_bytes()
+    readme = str(Path(MODULES[module]).parent / "README.md").replace("\\", "/")
+    entries[readme] = checked_target(root / readme).read_bytes()
+    if module == "minecraft":
+        entries["Minecraft/COMPATIBILITY.md"] = checked_target(root / "Minecraft/COMPATIBILITY.md").read_bytes()
+    if module == "web":
+        for rel in ("builders/designer.py", "builders/research.py", "examples/research/electrical-candidates.json", "examples/research/footwear-candidates.json"):
+            entries[rel] = checked_target(root / rel).read_bytes()
     entries["builder.py"] = b"import sys\nsys.dont_write_bytecode = True\nfrom core.builder_cli import main\nraise SystemExit(main())\n"
     entries["bundle.json"] = (json.dumps({"builder": module, "version": VERSION}) + "\n").encode()
     entries["BUNDLE_README.txt"] = f"""Claude Skills {module} builder {VERSION}
@@ -71,6 +80,8 @@ Manifests detect corruption; they are not publisher signatures.
 
 
 def build(module: str, output: Path, *, root: Path = ROOT) -> dict:
+    if module == "claude-image-studio":
+        return build_image_skill(output, root=root)
     output = checked_target(output)
     output.mkdir(parents=True, exist_ok=True)
     path = output / f"claude-skills-{module}-{VERSION}.zip"
@@ -84,6 +95,30 @@ def build(module: str, output: Path, *, root: Path = ROOT) -> dict:
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     (output / (path.name + ".sha256")).write_text(digest + "  " + path.name + "\n", encoding="utf-8")
     return {"module": module, "version": VERSION, "archive": str(path), "sha256": digest, "files": len(entries)}
+
+
+def build_image_skill(output: Path, *, root: Path = ROOT) -> dict:
+    output = checked_target(output)
+    output.mkdir(parents=True, exist_ok=True)
+    base = checked_target(root / "WebBuilder/skills/claude-image-studio")
+    entries = {}
+    for path in sorted(base.rglob("*")):
+        if is_link(path):
+            raise ValueError("Linked skill resource rejected")
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            entries[path.relative_to(base).as_posix()] = path.read_bytes()
+    entries["LICENSE"] = (root / "LICENSE").read_bytes()
+    entries["CHECKSUMS.json"] = (json.dumps({"schema_version": 1, "builder": "web", "skill": "claude-image-studio", "version": VERSION,
+        "files": {name: hashlib.sha256(data).hexdigest() for name, data in sorted(entries.items())}}, indent=2) + "\n").encode()
+    path = output / f"claude-image-studio-{VERSION}.zip"
+    with path.open("xb") as stream, zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, data in sorted(entries.items()):
+            info = zipfile.ZipInfo("claude-image-studio/" + _path(name), date_time=(2026, 11, 22, 0, 0, 0))
+            info.compress_type, info.external_attr = zipfile.ZIP_DEFLATED, 0o100644 << 16
+            archive.writestr(info, data)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    (output / (path.name + ".sha256")).write_text(digest + "  " + path.name + "\n", encoding="utf-8")
+    return {"module": "claude-image-studio", "version": VERSION, "archive": str(path), "sha256": digest, "files": len(entries)}
 
 
 def verify_archive(data: bytes) -> dict[str, bytes]:
@@ -138,13 +173,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     cmd = sub.add_parser("build")
-    cmd.add_argument("module", choices=[*MODULES, "all"])
+    cmd.add_argument("module", choices=[*MODULES, "claude-image-studio", "all"])
     cmd.add_argument("--output", type=Path, required=True)
     cmd = sub.add_parser("verify")
     cmd.add_argument("directory", type=Path)
     args = parser.parse_args()
     try:
-        result = [build(module, args.output) for module in MODULES] if args.command == "build" and args.module == "all" else build(args.module, args.output) if args.command == "build" else verify_directory(args.directory)
+        result = [build(module, args.output) for module in [*MODULES, "claude-image-studio"]] if args.command == "build" and args.module == "all" else build(args.module, args.output) if args.command == "build" else verify_directory(args.directory)
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(1, f"Error: {exc}\n")
     print(json.dumps(result, indent=2))

@@ -1,10 +1,9 @@
 """Independent, bounded artifact inspection; never imports generated code."""
-from html.parser import HTMLParser
 import hashlib
 import json
 from pathlib import Path
 import zipfile
-from distribution.installer import checked_target, is_link
+from distribution.installer import checked_target
 
 
 def inspect(workspace: Path, builder: str) -> list[dict]:

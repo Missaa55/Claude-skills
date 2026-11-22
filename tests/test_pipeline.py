@@ -38,6 +38,16 @@ class PipelineTests(unittest.TestCase):
         for builder in ("web", "app", "minecraft"):
             self.assertEqual(verify(self.workspace, builder)["status"], "not_configured")
 
+    @patch("core.pipeline.run", return_value={"status": "passed", "stdout": "BUILD SUCCESSFUL", "stderr": ""})
+    def test_exit_zero_with_corrupt_jar_fails_verification(self, _):
+        (self.workspace / "build.gradle").write_text("// simulated build command")
+        libs = self.workspace / "build/libs"
+        libs.mkdir(parents=True)
+        (libs / "broken.jar").write_bytes(b"not a ZIP archive")
+        result = verify(self.workspace, "minecraft", approved=True)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["artifacts"], [])
+
     @patch("core.pipeline.verify", return_value={"status": "passed"})
     @patch("core.pipeline.execute", return_value={"status": "success"})
     def test_exit_zero_without_artifacts_is_unverified(self, *_):
