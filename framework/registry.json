@@ -31,7 +31,8 @@
         "minecraft-server-ops",
         "minecraft-testing",
         "minecraft-release",
-        "minecraft-ai-integration"
+        "minecraft-ai-integration",
+        "minecraft-quality-cleaner"
       ]
     },
     "universal": {
@@ -112,7 +113,8 @@
         "webbuilder-security",
         "webbuilder-publishing",
         "webbuilder-cms",
-        "webbuilder-integration"
+        "webbuilder-integration",
+        "webbuilder-quality-cleaner"
       ]
     },
     "appbuilder": {
@@ -133,7 +135,8 @@
       "skills": [
         "appbuilder-orchestrator",
         "appbuilder-design",
-        "appbuilder-quality"
+        "appbuilder-quality",
+        "appbuilder-quality-cleaner"
       ]
     }
   },
@@ -301,6 +304,33 @@
     "universal/task-planner": [
       "plan",
       "planning"
+    ],
+    "minecraft-quality-cleaner": [
+      "ai slop",
+      "slop",
+      "cleanup",
+      "clean up",
+      "unnecessary data",
+      "unused files",
+      "placeholder cleanup"
+    ],
+    "appbuilder-quality-cleaner": [
+      "ai slop",
+      "slop",
+      "cleanup",
+      "clean up",
+      "unnecessary data",
+      "unused files",
+      "placeholder cleanup"
+    ],
+    "webbuilder-quality-cleaner": [
+      "ai slop",
+      "slop",
+      "cleanup",
+      "clean up",
+      "unnecessary data",
+      "unused files",
+      "placeholder cleanup"
     ]
   }
 }
