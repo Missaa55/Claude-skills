@@ -27,7 +27,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.8.2'
+          gradle-version: '8.14.3'
       - name: Validate fixture structure (static only)
         run: python3 -m unittest discover -s tests -p test_fabric_fixture.py -v
       - name: Compile and remap actual Fabric mod
