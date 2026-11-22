@@ -237,7 +237,11 @@ def scan(root: Path, builder: str) -> dict:
             _python(rel, content, findings, functions)
         if builder == "web":
             _web(rel, content, findings)
-        if builder == "app" and len(content) > 500 and "/api/" in content:
+        # A browser fetch client does not implement server authentication. Limit this
+        # heuristic to recognizable route definitions; external middleware still
+        # requires manual tracing and is never certified by a literal marker.
+        server_route = re.search(r"def do_(?:GET|POST|PUT|PATCH|DELETE)\b|(?:app|router)\.(?:get|post|put|patch|delete|route)\s*\(|@(?:Get|Post|Put|Patch|Delete)Mapping|export\s+(?:async\s+)?function\s+(?:GET|POST|PUT|PATCH|DELETE)\b", content)
+        if builder == "app" and len(content) > 500 and "/api/" in content and server_route:
             if not re.search(r"session|auth|jwt", content, re.I):
                 _finding(findings, rel, "api_auth_candidate", "API source has no literal authentication/session marker; trace actual middleware", severity="warning")
             if not re.search(r"valid|422|isinstance|zod|pydantic", content, re.I):

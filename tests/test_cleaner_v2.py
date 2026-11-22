@@ -76,6 +76,13 @@ class CleanerV2Tests(unittest.TestCase):
         self.assertIn("naming_candidate", self.kinds())
         self.assertIn("missing_tests_candidate", self.kinds())
 
+    def test_api_auth_checks_server_routes_not_fetch_clients(self):
+        padding = "# source context\n" * 40
+        self.put("static/client.js", 'fetch("/api/orders", {method: "POST"});\n' + "// client context\n" * 40)
+        self.put("server.py", 'class Api:\n    def do_POST(self):\n        return "/api/orders"\n' + padding)
+        candidates = [item["path"] for item in scan(self.root, "app")["findings"] if item["kind"] == "api_auth_candidate"]
+        self.assertEqual(candidates, ["server.py"])
+
 
 if __name__ == "__main__":
     unittest.main()

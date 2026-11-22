@@ -7,7 +7,6 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import threading
-import time
 import unittest
 import server
 
