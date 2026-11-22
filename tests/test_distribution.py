@@ -61,6 +61,28 @@ class DistributionTests(unittest.TestCase):
     def test_uninstall_missing(self):
         self.assertEqual(uninstall("web", self.target)["removed"], 0)
 
+    def test_tampered_state_cannot_delete_parent_file(self):
+        self.target.mkdir(parents=True)
+        victim = Path(self.temp.name) / "valuable.txt"
+        victim.write_text("KEEP")
+        state = {"schema_version": 1, "modules": {
+            "web": {"files": {"../../valuable.txt": "0" * 64}}}}
+        (self.target / ".claude-skills-install.json").write_text(json.dumps(state))
+        with self.assertRaises(ValueError):
+            uninstall("web", self.target)
+        self.assertEqual(victim.read_text(), "KEEP")
+
+    def test_tampered_absolute_path_rejected(self):
+        self.target.mkdir(parents=True)
+        victim = Path(self.temp.name) / "valuable.txt"
+        victim.write_text("KEEP")
+        state = {"schema_version": 1, "modules": {
+            "web": {"files": {str(victim): "0" * 64}}}}
+        (self.target / ".claude-skills-install.json").write_text(json.dumps(state))
+        with self.assertRaises(ValueError):
+            uninstall("web", self.target)
+        self.assertEqual(victim.read_text(), "KEEP")
+
     def test_state_is_local(self):
         install("web", self.target)
         state = json.loads((self.target / ".claude-skills-install.json").read_text())
