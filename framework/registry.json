@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "description": "Declarative routing metadata; no agent execution or external API calls.",
   "domains": {
     "minecraft": {
@@ -8,11 +8,9 @@
         "minecraft",
         "fabric",
         "neoforge",
-        "paper",
         "datapack",
         "worldgen",
         "modpack",
-        "npc",
         "minecraft server",
         "paper plugin",
         "fabric mod",
@@ -39,13 +37,15 @@
     "universal": {
       "root": "Universal/skills",
       "keywords": [
-        "review",
+        "code review",
         "bug",
+        "debug",
         "test",
-        "security",
-        "performance",
-        "plan",
+        "security audit",
+        "performance audit",
         "documentation",
+        "docs",
+        "review",
         "audit"
       ],
       "default": [
@@ -62,7 +62,6 @@
       "root": "Applications/skills",
       "keywords": [
         "application",
-        "app",
         "frontend",
         "backend",
         "api",
@@ -70,6 +69,7 @@
         "mobile",
         "desktop",
         "deploy",
+        "deployment",
         "react",
         "supabase",
         "server deployment"
@@ -91,9 +91,9 @@
         "website",
         "webbuilder",
         "webdesign",
-        "landing",
+        "landing page",
         "seo",
-        "responsive",
+        "responsive website",
         "cms",
         "webpage",
         "web builder",
@@ -125,7 +125,9 @@
         "build an app",
         "build an application",
         "create an app",
-        "generate an app"
+        "generate an app",
+        "build me an app",
+        "create application"
       ],
       "default": [
         "appbuilder-orchestrator"
@@ -201,8 +203,11 @@
       "ui design"
     ],
     "appbuilder-quality": [
-      "app quality",
-      "quality assurance"
+      "quality",
+      "testing",
+      "tests",
+      "review",
+      "verify"
     ],
     "applications/deployment-engineer": [
       "deploy",
@@ -215,6 +220,89 @@
     ],
     "webbuilder-cms": [
       "cms"
+    ],
+    "webbuilder-performance": [
+      "performance",
+      "lighthouse",
+      "core web vitals",
+      "page speed"
+    ],
+    "webbuilder-accessibility": [
+      "accessibility",
+      "wcag",
+      "a11y"
+    ],
+    "webbuilder-security": [
+      "security",
+      "xss",
+      "csp"
+    ],
+    "webbuilder-publishing": [
+      "publish",
+      "deploy website",
+      "deployment"
+    ],
+    "webbuilder-research": [
+      "research",
+      "competitor",
+      "sitemap"
+    ],
+    "webbuilder-integration": [
+      "integration",
+      "integrate",
+      "connect"
+    ],
+    "minecraft-testing": [
+      "test",
+      "testing"
+    ],
+    "minecraft-release": [
+      "release",
+      "publish"
+    ],
+    "minecraft-fabric": [
+      "fabric"
+    ],
+    "minecraft-neoforge": [
+      "neoforge"
+    ],
+    "minecraft-paper": [
+      "paper plugin"
+    ],
+    "applications/web-frontend": [
+      "frontend",
+      "react",
+      "ui"
+    ],
+    "applications/backend-api": [
+      "backend",
+      "api"
+    ],
+    "applications/database-engineer": [
+      "database",
+      "sql",
+      "supabase"
+    ],
+    "applications/desktop-mobile": [
+      "mobile",
+      "desktop"
+    ],
+    "universal/test-strategist": [
+      "test",
+      "testing",
+      "tests"
+    ],
+    "universal/security-auditor": [
+      "security",
+      "security audit"
+    ],
+    "universal/performance-profiler": [
+      "performance",
+      "profiling"
+    ],
+    "universal/task-planner": [
+      "plan",
+      "planning"
     ]
   }
 }
