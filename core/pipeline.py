@@ -5,6 +5,7 @@ Local CLI execution is NOT sandboxed. Never run on untrusted repositories.
 from dataclasses import dataclass
 from pathlib import Path
 import json
+import shutil
 import subprocess
 from framework.route import route
 from core.runtime import RunRequest, execute
@@ -57,8 +58,13 @@ def verify(workspace: Path, builder: str, *, timeout: int = 120) -> dict:
     if builder == "app" and not ((workspace / "pyproject.toml").is_file() or
                                  (workspace / "pytest.ini").is_file()):
         return {"status": "not_configured", "reason": "Missing Python test configuration"}
-    if builder == "minecraft" and not (workspace / "gradlew").is_file():
-        return {"status": "not_configured", "reason": "Missing Gradle wrapper"}
+    if builder == "minecraft":
+        if (workspace / "gradlew").is_file():
+            command = ["./gradlew", "build"]
+        elif shutil.which("gradle"):
+            command = ["gradle", "build"]
+        else:
+            return {"status": "not_configured", "reason": "Missing Gradle wrapper and Gradle executable"}
     try:
         result = subprocess.run(command, cwd=workspace, shell=False,
                                 capture_output=True, text=True, timeout=timeout,
