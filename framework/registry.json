@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "description": "Declarative routing metadata; no agent execution or external API calls.",
+  "domains": {
+    "minecraft": {
+      "root": "Minecraft/skills",
+      "keywords": [
+        "minecraft",
+        "fabric",
+        "neoforge",
+        "paper",
+        "datapack",
+        "worldgen",
+        "modpack",
+        "plugin",
+        "server",
+        "npc",
+        "mcp"
+      ],
+      "default": [
+        "minecraft-architecture"
+      ],
+      "skills": [
+        "minecraft-architecture",
+        "minecraft-fabric",
+        "minecraft-neoforge",
+        "minecraft-paper",
+        "minecraft-datapack",
+        "minecraft-worldgen",
+        "minecraft-assets",
+        "minecraft-server-ops",
+        "minecraft-testing",
+        "minecraft-release",
+        "minecraft-ai-integration"
+      ]
+    },
+    "universal": {
+      "root": "Universal/skills",
+      "keywords": [
+        "review",
+        "bug",
+        "test",
+        "security",
+        "performance",
+        "plan",
+        "documentation",
+        "audit"
+      ],
+      "default": [
+        "task-planner"
+      ],
+      "skills": [
+        "task-planner",
+        "security-auditor",
+        "test-strategist",
+        "performance-profiler"
+      ]
+    },
+    "applications": {
+      "root": "Applications/skills",
+      "keywords": [
+        "application",
+        "app",
+        "frontend",
+        "backend",
+        "api",
+        "database",
+        "mobile",
+        "desktop",
+        "deploy",
+        "react",
+        "supabase"
+      ],
+      "default": [
+        "backend-api"
+      ],
+      "skills": [
+        "web-frontend",
+        "backend-api",
+        "database-engineer",
+        "desktop-mobile",
+        "deployment-engineer"
+      ]
+    },
+    "webbuilder": {
+      "root": "WebBuilder/skills",
+      "keywords": [
+        "website",
+        "webbuilder",
+        "webdesign",
+        "landing",
+        "seo",
+        "responsive",
+        "cms",
+        "webpage"
+      ],
+      "default": [
+        "webbuilder-orchestrator"
+      ],
+      "skills": [
+        "webbuilder-orchestrator",
+        "webbuilder-research",
+        "webbuilder-design-system",
+        "webbuilder-layout",
+        "webbuilder-content-seo",
+        "webbuilder-accessibility",
+        "webbuilder-performance",
+        "webbuilder-visual-qa",
+        "webbuilder-security",
+        "webbuilder-publishing",
+        "webbuilder-cms",
+        "webbuilder-integration"
+      ]
+    }
+  },
+  "shared_skills": [
+    "workflow-orchestrator",
+    "change-reviewer",
+    "bug-investigator",
+    "documentation-auditor"
+  ],
+  "cross_domain_rules": [
+    "Select only skills relevant to the request",
+    "Never combine incompatible Minecraft loader APIs as one implementation",
+    "All execution requires explicit tooling and permission",
+    "Record tests as verified only after running them"
+  ]
+}
