@@ -72,7 +72,14 @@ def _write_atomic(path: Path, data: bytes) -> None:
             os.unlink(temp)
 
 def _destination(target: Path, name: str) -> Path:
-    dest = target / name
+    # State is JSON on disk, therefore treat its paths as untrusted input.
+    # Reject traversal and absolute paths before any read, write or deletion.
+    parts = Path(name)
+    if (parts.is_absolute() or not parts.parts or
+            any(part in (".", "..") for part in parts.parts) or
+            "\\\\" in name or ":" in name or name.startswith(("/", "\\\\"))):
+        raise ValueError(f"Unsafe installation path: {name}")
+    dest = target / parts
     if dest.is_symlink() or any(p.is_symlink() for p in list(dest.parents) if p != target and target in p.parents):
         raise ValueError(f"Symlink destination rejected: {dest}")
     return dest
