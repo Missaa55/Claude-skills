@@ -9,6 +9,14 @@ import zipfile
 from distribution.installer import MODULES, ROOT, VERSION, checked_target, is_link
 
 MAX_BYTES = 32_000_000
+TEXT_SUFFIXES = {".py", ".md", ".txt", ".html", ".css", ".js", ".json", ".toml", ".gradle", ".sql", ".yml", ".yaml", ".svg", ".mcfunction", ".mcmeta", ".properties"}
+
+
+def _source_bytes(path):
+    data = checked_target(path).read_bytes()
+    # Git checkouts may use CRLF on Windows. Canonical text makes package hashes
+    # independent of that checkout setting; binary assets retain their exact bytes.
+    return data.replace(b"\r\n", b"\n") if path.suffix in TEXT_SUFFIXES or path.name == "LICENSE" else data
 
 
 def _path(name):
@@ -35,17 +43,17 @@ def payload(module, root=ROOT):
             if is_link(path):
                 raise ValueError("Linked package source rejected")
             if path.is_file() and not any(part in {"__pycache__", "dist", "build"} for part in path.relative_to(base).parts) and path.suffix != ".pyc":
-                entries[path.relative_to(root).as_posix()] = path.read_bytes()
+                entries[path.relative_to(root).as_posix()] = _source_bytes(path)
     for rel in ("builders/__init__.py", "builders/scaffold.py", "distribution/__init__.py", "distribution/cli.py", "distribution/installer.py", "distribution/bundle.py", "LICENSE", f"examples/briefs/{module}.json"):
         path = checked_target(root / rel)
-        entries[rel] = path.read_bytes()
+        entries[rel] = _source_bytes(path)
     readme = str(Path(MODULES[module]).parent / "README.md").replace("\\", "/")
-    entries[readme] = checked_target(root / readme).read_bytes()
+    entries[readme] = _source_bytes(root / readme)
     if module == "minecraft":
-        entries["Minecraft/COMPATIBILITY.md"] = checked_target(root / "Minecraft/COMPATIBILITY.md").read_bytes()
+        entries["Minecraft/COMPATIBILITY.md"] = _source_bytes(root / "Minecraft/COMPATIBILITY.md")
     if module == "web":
         for rel in ("builders/designer.py", "builders/research.py", "examples/research/electrical-candidates.json", "examples/research/footwear-candidates.json"):
-            entries[rel] = checked_target(root / rel).read_bytes()
+            entries[rel] = _source_bytes(root / rel)
     entries["builder.py"] = b"import sys\nsys.dont_write_bytecode = True\nfrom core.builder_cli import main\nraise SystemExit(main())\n"
     entries["bundle.json"] = (json.dumps({"builder": module, "version": VERSION}) + "\n").encode()
     entries["BUNDLE_README.txt"] = f"""Claude Skills {module} builder {VERSION}
@@ -106,8 +114,8 @@ def build_image_skill(output: Path, *, root: Path = ROOT) -> dict:
         if is_link(path):
             raise ValueError("Linked skill resource rejected")
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
-            entries[path.relative_to(base).as_posix()] = path.read_bytes()
-    entries["LICENSE"] = (root / "LICENSE").read_bytes()
+            entries[path.relative_to(base).as_posix()] = _source_bytes(path)
+    entries["LICENSE"] = _source_bytes(root / "LICENSE")
     entries["CHECKSUMS.json"] = (json.dumps({"schema_version": 1, "builder": "web", "skill": "claude-image-studio", "version": VERSION,
         "files": {name: hashlib.sha256(data).hexdigest() for name, data in sorted(entries.items())}}, indent=2) + "\n").encode()
     path = output / f"claude-image-studio-{VERSION}.zip"

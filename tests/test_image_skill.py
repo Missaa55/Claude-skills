@@ -62,6 +62,23 @@ class ImageSkillTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertFalse(json.loads(proc.stdout)["requires_local_gpu"])
 
+    def test_archive_reproducible_across_checkout_line_endings(self):
+        source = self.root / "source"
+        skill = source / "WebBuilder/skills/claude-image-studio"
+        skill.mkdir(parents=True)
+        text = b"---\nname: claude-image-studio\ndescription: Synthetic archive fixture\n---\nBody\n"
+        (skill / "SKILL.md").write_bytes(text.replace(b"\n", b"\r\n"))
+        (source / "LICENSE").write_bytes(b"Synthetic license fixture\r\n")
+        binary = b"\x89PNG\r\n\x1a\n" + b"synthetic-binary-fixture\r\n"
+        (skill / "asset.png").write_bytes(binary)
+        first = build_image_skill(self.root / "crlf", root=source)
+        (skill / "SKILL.md").write_bytes(text)
+        (source / "LICENSE").write_bytes(b"Synthetic license fixture\n")
+        second = build_image_skill(self.root / "lf", root=source)
+        self.assertEqual(Path(first["archive"]).read_bytes(), Path(second["archive"]).read_bytes())
+        with zipfile.ZipFile(second["archive"]) as archive:
+            self.assertEqual(archive.read("claude-image-studio/asset.png"), binary)
+
 
 if __name__ == "__main__":
     unittest.main()
