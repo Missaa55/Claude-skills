@@ -74,9 +74,7 @@
         "supabase",
         "server deployment"
       ],
-      "default": [
-        "backend-api"
-      ],
+      "default": [],
       "skills": [
         "web-frontend",
         "backend-api",
