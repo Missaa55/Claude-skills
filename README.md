@@ -70,3 +70,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Please propose narrowly scoped changes, 
 Early development: domain-specific skill collections, an offline routing utility, a workflow tracker, and unit tests. CI status must be checked separately. Skills are guidance, not executable security controls. Compatibility with third-party tools does not imply vendor endorsement.
 
 Licensed under MIT; see [LICENSE](LICENSE).
+
+## Experimental local runtime
+
+The new `core/` package can prepare or explicitly run an installed Claude Code or Codex CLI in a user-selected directory. It is **not sandboxed**, not an autonomous multi-agent builder, and is disabled by default.
+
+```bash
+python3 -m core.cli web --provider claude --workspace . --prompt "Review this project"
+# Add --execute only if you trust the workspace and authorize the CLI run.
+```
+
+Read [architecture research](docs/OPEN_SOURCE_RESEARCH.md) before using the runtime. The web, app and Minecraft products remain independent; only runtime infrastructure is shared.
