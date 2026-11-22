@@ -63,6 +63,16 @@ class PipelineTests(unittest.TestCase):
         result = run_pipeline("web", "Build", self.workspace, "claude", approved=True)
         self.assertFalse(result["verified"])
 
+    @patch("core.pipeline.subprocess.run")
+    @patch("core.pipeline.shutil.which", return_value="/usr/bin/gradle")
+    def test_minecraft_gradle_fallback(self, _, runner):
+        from subprocess import CompletedProcess
+        (self.workspace / "build.gradle").write_text("plugins {}")
+        runner.return_value = CompletedProcess(["gradle", "build"], 0, "", "")
+        result = verify(self.workspace, "minecraft")
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(runner.call_args.args[0], ["gradle", "build"])
+
     def test_invalid_repair_limit(self):
         with self.assertRaises(ValueError):
             run_pipeline("web", "Build", self.workspace, "claude",
