@@ -11,7 +11,7 @@ Use for pre-release quality review, placeholder detection and cleanup planning f
 
 ## Procedure
 
-1. Run `python3 -m quality.cleaner minecraft <project-directory>` from the repository checkout, or use equivalent read-only inspection when the optional tool is unavailable.
+1. When installed as a standalone Claude skill, run `python3 scripts/cleaner.py minecraft <project-directory>` from this skill's directory. When using the repository checkout, `python3 -m quality.cleaner minecraft <project-directory>` also works. Both commands only inspect files.
 2. Inspect every finding in context. Heuristics are not proof of AI origin or safe deletion; verify references, dependencies, user content and runtime behavior.
 3. Prepare a human-readable proposed diff and list of candidate files with justifications. Do not remove, rewrite or move files without explicit approval. Preserve backups and provide a rollback plan.
 4. Re-run builder-specific tests after any separately approved cleanup and report exact results.
