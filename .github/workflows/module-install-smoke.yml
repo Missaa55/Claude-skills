@@ -1,0 +1,46 @@
+name: Modular installation smoke tests
+
+on:
+  push:
+    paths:
+      - 'distribution/**'
+      - 'quality/**'
+      - 'Minecraft/skills/**'
+      - 'AppBuilder/skills/**'
+      - 'WebBuilder/skills/**'
+      - 'core/pipeline.py'
+      - 'core/pipeline_cli.py'
+      - 'scripts/smoke_modules.py'
+      - '.github/workflows/module-install-smoke.yml'
+  pull_request:
+    paths:
+      - 'distribution/**'
+      - 'quality/**'
+      - 'Minecraft/skills/**'
+      - 'AppBuilder/skills/**'
+      - 'WebBuilder/skills/**'
+      - 'core/pipeline.py'
+      - 'core/pipeline_cli.py'
+      - 'scripts/smoke_modules.py'
+      - '.github/workflows/module-install-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  module-lifecycle:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        module: [minecraft, app, web]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Real install, standalone cleaner, dry-run and uninstall
+        run: python scripts/smoke_modules.py ${{ matrix.module }}
