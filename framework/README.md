@@ -12,3 +12,14 @@ python3 -m unittest discover -s tests -v
 ```
 
 The router is deliberately simple and auditable. Future versions may add explicit dependencies, conflicts, typed handoffs, and real agent integrations after tests and permission controls are designed.
+
+## Integrated handoff manifest
+
+Generate a dependency-ordered, evidence-ready task manifest:
+
+```bash
+python3 framework/plan.py "Build a responsive website with SEO" --output plan.json
+python3 scripts/validate_registry.py
+```
+
+The manifest identifies selected skills, a primary owner, stage dependencies, evidence requirements and a release-approval flag. It is **not** an agent runtime and does not run tests or builds. Existing `scripts/workflow.py` remains an independent manual evidence tracker.
