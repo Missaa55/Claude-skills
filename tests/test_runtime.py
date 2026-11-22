@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from core.process import Policy
-from core.runtime import RunRequest, execute, prepare, doctor, _usage
+from core.runtime import RunRequest, execute, prepare, doctor, _usage, valid_response
 
 
 class RuntimeTests(unittest.TestCase):
@@ -35,13 +35,13 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             prepare(RunRequest("web", "x", self.path / "absent", "claude"))
 
-    @patch("core.runtime.run", return_value={"status": "passed", "exit_code": 0, "stdout": "ok", "stderr": "", "elapsed_seconds": 0.1})
+    @patch("core.runtime.run", return_value={"status": "passed", "exit_code": 0, "stdout": '{"type":"result","subtype":"success","result":"Synthetic response"}', "stderr": "", "elapsed_seconds": 0.1})
     @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
     def test_success_logs_and_stdin(self, _, runner):
         result = execute(self.request, approved=True)
         self.assertEqual(result["status"], "success")
         record = json.loads(Path(result["log_file"]).read_text())
-        self.assertEqual(record["stdout"], "ok")
+        self.assertIn("Synthetic response", record["stdout"])
         self.assertEqual(record["verification"], "NOT VERIFIED")
         self.assertEqual(runner.call_args.kwargs["stdin"], self.request.prompt)
 
@@ -62,6 +62,16 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(result["tokens"]["input_tokens"], 123)
         self.assertIsNone(result["estimated_cost_usd"])
         self.assertIsNone(_usage("invalid provider response")["tokens"])
+
+    def test_invalid_ai_response_and_partial_codex_turn(self):
+        self.assertFalse(valid_response("claude", "exit zero, but invalid provider output"))
+        self.assertFalse(valid_response("codex", '{"type":"turn.completed"}'))
+        self.assertTrue(valid_response("codex", '{"type":"item.completed","item":{"type":"agent_message","text":"Synthetic finished response"}}\n{"type":"turn.completed"}'))
+
+    @patch("core.runtime.run", return_value={"status": "passed", "exit_code": 0, "stdout": "invalid", "stderr": "", "elapsed_seconds": 0.1})
+    @patch("core.runtime.shutil.which", return_value="/usr/bin/claude")
+    def test_invalid_response_exit_zero_never_succeeds(self, *_):
+        self.assertEqual(execute(self.request, approved=True)["status"], "invalid_response")
 
 
 if __name__ == "__main__":

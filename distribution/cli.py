@@ -10,13 +10,17 @@ def main(argv=None):
     for action in ("install", "update", "uninstall"):
         cmd = sub.add_parser(action)
         cmd.add_argument("module", choices=sorted(MODULES))
-        cmd.add_argument("--target", type=Path, default=Path.home() / ".claude" / "skills")
+        cmd.add_argument("--target", type=Path)
+        cmd.add_argument("--client", choices=("claude", "codex"), default="claude")
     cmd = sub.add_parser("status")
-    cmd.add_argument("--target", type=Path, default=Path.home() / ".claude" / "skills")
+    cmd.add_argument("--target", type=Path)
+    cmd.add_argument("--client", choices=("claude", "codex"), default="claude")
     cmd = sub.add_parser("recover")
     cmd.add_argument("--target", type=Path, required=True)
     cmd.add_argument("--abandoned-lock", action="store_true", help="Remove lock only if its owning process no longer exists")
     args = parser.parse_args(argv)
+    if args.target is None:
+        args.target = Path.home() / (".agents" if args.client == "codex" else ".claude") / "skills"
     try:
         result = (install(args.module, args.target) if args.command in ("install", "update")
                   else uninstall(args.module, args.target) if args.command == "uninstall"

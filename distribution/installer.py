@@ -7,6 +7,7 @@ import json
 import os
 import re
 import stat
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +35,14 @@ def is_link(path: Path) -> bool:
 
 def checked_target(target: Path) -> Path:
     target = Path(os.path.abspath(target.expanduser()))
+    # macOS exposes its OS-owned /private trees through these exact aliases.
+    # Normalize only verified root-owned system links, never arbitrary user links.
+    if sys.platform == "darwin":
+        for alias in (Path("/var"), Path("/tmp"), Path("/etc")):
+            expected = Path("/private") / alias.name
+            if target.is_relative_to(alias) and alias.is_symlink() and alias.lstat().st_uid == 0 and alias.resolve() == expected:
+                target = expected / target.relative_to(alias)
+                break
     for part in [*reversed(target.parents), target]:
         if is_link(part):
             raise ValueError(f"Linked path rejected: {part}")
@@ -90,6 +99,12 @@ def _source_files(module: str, root: Path) -> dict[str, bytes]:
     prefix = {"minecraft": "minecraft", "app": "appbuilder", "web": "webbuilder"}[module]
     source = checked_target(root / "quality/cleaner.py")
     files[f"{prefix}-quality-cleaner/scripts/cleaner.py"] = source.read_bytes()
+    # A skills-only install must still have an executable, self-contained builder.
+    # payload contains only source skills (never generated installation trees).
+    from distribution.bundle import payload
+    orchestrator = "minecraft-architecture" if module == "minecraft" else prefix + "-orchestrator"
+    for rel, data in payload(module, root).items():
+        files[f"{orchestrator}/runtime/{rel}"] = data
     return dict(sorted(files.items()))
 
 

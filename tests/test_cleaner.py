@@ -12,8 +12,7 @@ class CleanerTests(unittest.TestCase):
     def test_web_placeholder(self):
         (self.root / "index.html").write_text("Unleash the power")
         report = scan(self.root, "web")
-        self.assertEqual(len(report["findings"]), 1)
-        self.assertEqual(report["findings"][0]["kind"], "slop_candidate")
+        self.assertIn("slop_candidate", {f["kind"] for f in report["findings"]})
         self.assertEqual(report["deleted_files"], 0)
 
     def test_minecraft_placeholder(self):
@@ -67,7 +66,7 @@ class CleanerTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
 
     def test_clean_project(self):
-        (self.root / "index.html").write_text("<h1>Hello</h1>")
+        (self.root / "index.html").write_text('<!doctype html><html lang="en"><head><title>Hello</title><meta name="viewport" content="width=device-width"></head><body><h1>Hello</h1></body></html>')
         self.assertEqual(scan(self.root, "web")["findings"], [])
 
 if __name__ == "__main__":

@@ -76,6 +76,25 @@ def _usage(stdout: str) -> dict:
     return {"tokens": usage or None, "estimated_cost_usd": None}
 
 
+def valid_response(provider: str, stdout: str) -> bool:
+    events = []
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict):
+            events.append(event)
+    if provider == "claude":
+        return any(e.get("type") == "result" and e.get("subtype") == "success" and
+                   isinstance(e.get("result"), str) and e["result"].strip() for e in events)
+    completed = any(e.get("type") == "turn.completed" for e in events)
+    message = any(e.get("type") == "item.completed" and isinstance(e.get("item"), dict) and
+                  e["item"].get("type") == "agent_message" and isinstance(e["item"].get("text"), str) and
+                  e["item"]["text"].strip() for e in events)
+    return completed and message
+
+
 def execute(request: RunRequest, *, approved: bool = False, log_dir: Path | None = None, cancel=None) -> dict:
     if not approved:
         raise PermissionError("Explicit execution approval required")
@@ -89,6 +108,8 @@ def execute(request: RunRequest, *, approved: bool = False, log_dir: Path | None
                  timeout=request.timeout, cancel=cancel, stdin=request.prompt)
     run_id = uuid.uuid4().hex
     status = "success" if result["status"] == "passed" else result["status"]
+    if status == "success" and not valid_response(request.provider, result["stdout"]):
+        status = "invalid_response"
     record = {"id": run_id, "builder": request.builder, "provider": request.provider,
               **result, "status": status, "verification": "NOT VERIFIED", **_usage(result["stdout"])}
     path = log_dir / f"{run_id}.json"

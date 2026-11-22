@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import uuid
 from distribution.installer import checked_target
 
 MAX_OUTPUT = 2_000_000
@@ -22,7 +23,7 @@ def redact(value: str) -> str:
             value = value.replace(secret, "[REDACTED]")
     value = re.sub(r"(?i)\b(?:sk-[\w-]{12,}|ghp_[\w]{12,}|github_pat_[\w_]{12,})\b", "[REDACTED]", value)
     value = re.sub(r"(?i)(bearer\s+)[^\s\"']+", r"\1[REDACTED]", value)
-    return re.sub(r'(?i)(\b(?:password|secret|(?:access_|refresh_|auth_)?token|api[_-]?key)[\"\']?\s*[:=]\s*)[^\s,}\n]+',
+    return re.sub(r'(?i)(\b(?:[\w-]*[_-])?(?:password|secret|token|api[_-]?key)\b[\"\']?\s*[:=]\s*)[^\s,}\n]+',
                   r'\1[REDACTED]', value)
 
 
@@ -48,7 +49,7 @@ def isolated_command(command: list[str], workspace: Path, policy: Policy) -> lis
         raise PermissionError("Container network requires separate explicit approval")
     if any(c in str(workspace) for c in (",", "\n", "\r")):
         raise ValueError("Unsupported mount path")
-    return [docker, "run", "--rm", "--init", "--pull=never", "--read-only", "--cap-drop=ALL",
+    return [docker, "run", "--rm", "--init", "--name=builder-" + uuid.uuid4().hex, "--pull=never", "--read-only", "--cap-drop=ALL",
             "--security-opt=no-new-privileges", "--pids-limit=128", "--memory=2g", "--cpus=2",
             "--network=bridge" if policy.network else "--network=none", "--user=65532:65532",
             "--tmpfs=/tmp:rw,noexec,nosuid,size=256m", "--env=HOME=/tmp",
@@ -198,6 +199,12 @@ def run(command: list[str], workspace: Path, *, approved: bool = False,
             elif process.poll() is None:
                 process.kill()
             process.wait(timeout=10)
+            if (policy or Policy()).mode == "docker":
+                container = next(p.split("=", 1)[1] for p in command if p.startswith("--name=builder-"))
+                cleanup = subprocess.run([command[0], "rm", "--force", container], env=env, stdin=subprocess.DEVNULL,
+                                         capture_output=True, timeout=15, shell=False)
+                if cleanup.returncode and b"No such container" not in cleanup.stderr:
+                    status = "cleanup_failed"
             for thread in locals().get("readers", []):
                 thread.join(timeout=5)
             for stream in (process.stdout, process.stderr, process.stdin):

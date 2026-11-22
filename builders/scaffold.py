@@ -180,6 +180,9 @@ public final class WorkshopMod implements ModInitializer {{
 
 def create(spec: dict, workspace: Path) -> dict:
     spec = validate(spec)
+    bundle = ROOT / "bundle.json"
+    if bundle.is_file() and json.loads(bundle.read_text())["builder"] != spec["builder"]:
+        raise ValueError("Builder is not included in this standalone runtime")
     workspace = checked_target(workspace)
     # Atomic publication into a NEW directory. Existing even empty directories are protected.
     if workspace.exists():
