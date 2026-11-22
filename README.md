@@ -81,3 +81,17 @@ python3 -m core.cli web --provider claude --workspace . --prompt "Review this pr
 ```
 
 Read [architecture research](docs/OPEN_SOURCE_RESEARCH.md) before using the runtime. The web, app and Minecraft products remain independent; only runtime infrastructure is shared.
+
+## Install just one builder
+
+The offline modular installer copies only the selected builder's skill instructions to Claude Code. See [installation details](distribution/README.md).
+
+```bash
+python3 -m distribution.cli install minecraft
+# Or: python3 -m distribution.cli install app
+# Or: python3 -m distribution.cli install web
+python3 -m distribution.cli status
+python3 -m distribution.cli uninstall minecraft
+```
+
+Modules are independently installable and removable; no other builder is required. This is a **skill installer**, not an autonomous builder or a standalone executable package. Run commands from a cloned repository with Python 3.10+.
