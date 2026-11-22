@@ -95,3 +95,15 @@ python3 -m distribution.cli uninstall minecraft
 ```
 
 Modules are independently installable and removable; no other builder is required. This is a **skill installer**, not an autonomous builder or a standalone executable package. Run commands from a cloned repository with Python 3.10+.
+
+## AI slop and unnecessary-data review
+
+All three builders now include their own `*-quality-cleaner` skill. The shared offline scanner applies separate web/app/Minecraft heuristics and **never deletes files**. See [Quality Cleaner](quality/README.md).
+
+```bash
+python3 -m quality.cleaner web ./site
+python3 -m quality.cleaner app ./application
+python3 -m quality.cleaner minecraft ./mod
+```
+
+Findings require human review; placeholder patterns are not reliable proof of AI authorship, and unused files cannot be safely determined by filename alone.
