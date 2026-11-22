@@ -107,3 +107,12 @@ python3 -m quality.cleaner minecraft ./mod
 ```
 
 Findings require human review; placeholder patterns are not reliable proof of AI authorship, and unused files cannot be safely determined by filename alone.
+
+## Experimental end-to-end builder pipeline
+
+The opt-in pipeline now loads **only** the selected builder's skills, invokes an installed Claude/Codex CLI, runs a predeclared build/test check and can retry failed checks up to three times. It does **not** isolate untrusted code, and generated-project success has not yet been demonstrated. See [pipeline instructions and safety warnings](docs/PIPELINE.md).
+
+```bash
+python3 -m core.pipeline_cli web --task "Create a landing page" --workspace ./my-site --provider claude
+# Add --execute only in a trusted workspace after reviewing the safety warning.
+```
